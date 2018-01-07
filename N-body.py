@@ -32,11 +32,13 @@ print(bodies[2][body['x']])
 '''
 
 
-
+'''
+Class holds attributes of a single body
+'''
 
 class Body(object):
     global_ident = 0
-    def __init__(self, ident=None, x=None, y=None,z=None,Vx=None,Vy=None,Vz=None,Vx_new=None,Vy_new=None,Vz_new=None,mass=None):
+    def __init__(self, ident=None, x=None, y=None,z=None,Vx=None,Vy=None,Vz=None,mass=None):
         if ident == None:
             self.ident = Body.global_ident
             Body.global_ident += 1
@@ -66,15 +68,29 @@ class Body(object):
             self.Vz = random.random()
         else:
             self.Vz = Vz
-        self.Vx_new = Vx_new
-        self.Vy_new = Vy_new
-        self.Vz_new = Vz_new
+        self.Vx_new = 0
+        self.Vy_new = 0
+        self.Vz_new = 0
         if mass == None:
             self.mass = random.random()
         else:
             self.mass = mass
     def print(self):
-        print("ident: " + str(self.ident) + ", x = " + str(self.x) + ", y = " + str(self.y) +", z = " + str(self.z) +", Vx = " + str(self.Vx) +", Vy = " + str(self.Vy) +", Vz = " + str(self.Vz) +", Vx_new = " + str(self.Vx_new) +", Vy_new = " + str(self.Vy_new) +", Vz_new = " + str(self.Vz_new) + ", mass = " + str(self.mass))
+        print("ident: " + str(self.ident)
+              + ", x = " + str(self.x)
+              + ", y = " + str(self.y)
+              + ", z = " + str(self.z)
+              + ", Vx = " + str(self.Vx)
+              + ", Vy = " + str(self.Vy)
+              + ", Vz = " + str(self.Vz)
+              + ", Vx_new = " + str(self.Vx_new)
+              + ", Vy_new = " + str(self.Vy_new)
+              + ", Vz_new = " + str(self.Vz_new)
+              + ", mass = " + str(self.mass))
+
+'''
+Class holds bodies
+'''
 
 class Asystem:
     def __init__(self,n_bodies=10):
@@ -82,11 +98,32 @@ class Asystem:
         self.system = []
         for i in range(self.n_bodies):
             self.system.append(Body())
+    def __init__(self,file_name):
+        self.system = self.read_from_file(file_name)
     def print(self):
         for body in self.system:
             body.print()
-
+    def read_from_file(self,file_name):
+        bodies = []
+        for line in open(file_name):
+            fields = line.split(",")
+            if fields[1] != 'x':
+                body = Body(str(fields[0]),
+                            float(fields[1]),
+                            float(fields[2]),
+                            float(fields[3]),
+                            float(fields[4]),
+                            float(fields[5]),
+                            float(fields[6]),
+                            float(fields[7]))
+                bodies.append(body)
+        return bodies
+    def write_to_file(self,file_name):
+        None
 if __name__ == "__main__":
+    solar_system = Asystem(file_name='N-body.csv')
+    solar_system.print()
+    '''
     solar_system = Asystem()
     solar_system.print()
-
+    '''
