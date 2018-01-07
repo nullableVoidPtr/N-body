@@ -2,7 +2,17 @@ import pandas as pd
 import re
 import random
 
-body = {'ident':0, 'x':1, 'y':2, 'z':3, 'Vx_old':4, 'Vy_old':5, 'Vz_old':6, 'Vx_new':7, 'Vy_new':8, 'Vz_new':9, 'mass':10}
+body = {'ident':0,
+        'x':1,
+        'y':2,
+        'z':3,
+        'Vx':4,
+        'Vy':5,
+        'Vz':6,
+        'mass':7,
+        'Vx_new':8,
+        'Vy_new':9,
+        'Vz_new':10, }
 
 '''
 file = 'N-body.csv'
@@ -83,10 +93,10 @@ class Body(object):
               + ", Vx = " + str(self.Vx)
               + ", Vy = " + str(self.Vy)
               + ", Vz = " + str(self.Vz)
+              + ", mass = " + str(self.mass)
               + ", Vx_new = " + str(self.Vx_new)
               + ", Vy_new = " + str(self.Vy_new)
-              + ", Vz_new = " + str(self.Vz_new)
-              + ", mass = " + str(self.mass))
+              + ", Vz_new = " + str(self.Vz_new))
 
 '''
 Class holds bodies
@@ -133,6 +143,7 @@ class Asystem:
         file = open(file_name,'w')
         file.write(data)
         file.close()
+
 if __name__ == "__main__":
     solar_system = Asystem(file_name='N-body.csv')
     solar_system.print()
