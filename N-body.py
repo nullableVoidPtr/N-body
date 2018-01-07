@@ -1,6 +1,7 @@
 import pandas as pd
 import re
 import random
+import math
 
 body = {'ident':0,
         'x':1,
@@ -97,6 +98,16 @@ class Body(object):
               + ", Vx_new = " + str(self.Vx_new)
               + ", Vy_new = " + str(self.Vy_new)
               + ", Vz_new = " + str(self.Vz_new))
+    def force_cal(self, other_body, grav_cons):
+        dx = other_body.x - self.x
+        dy = other_body.y - self.y
+        dz = other_body.z - self.z
+        distance = math.sqrt(dx ** 2 + dy ** 2 + dz ** 2)
+        force = grav_cons * self.mass * other_body.mass / (distance ** 2)
+        angleBAM = math.asin(dz/distance)
+        angleMAN = math.atan(dy/dx)
+
+
 
 '''
 Class holds bodies
@@ -131,7 +142,8 @@ class Asystem:
     def write_to_file(self,file_name):
         data = 'ident,x,y,z,Vx,Vy,Vx,mass\n'
         for body in self.system:
-            body_data = (body.ident + ","
+            body_data = (bif body
+                force = grav_cons * ody.ident + ","
                          + str(body.x) + ","
                          + str(body.y) + ","
                          + str(body.z) + ","
@@ -143,6 +155,12 @@ class Asystem:
         file = open(file_name,'w')
         file.write(data)
         file.close()
+    def simulate(self, grav_cons, time_int, total_time):
+        time = 0
+        while time < total_time:
+            for body in self.system:
+                for other_body in self.system:
+
 
 if __name__ == "__main__":
     solar_system = Asystem(file_name='N-body.csv')
