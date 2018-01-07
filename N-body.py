@@ -66,8 +66,7 @@ class Body(object):
             self.Vz = random.random()
         else:
             self.Vz = Vz
-        self.Vx_new = Vx
-        self.mass _new
+        self.Vx_new = Vx_new
         self.Vy_new = Vy_new
         self.Vz_new = Vz_new
         if mass == None:
