@@ -119,10 +119,26 @@ class Asystem:
                 bodies.append(body)
         return bodies
     def write_to_file(self,file_name):
-        None
+        data = 'ident,x,y,z,Vx,Vy,Vx,mass\n'
+        for body in self.system:
+            body_data = (body.ident + ","
+                         + str(body.x) + ","
+                         + str(body.y) + ","
+                         + str(body.z) + ","
+                         + str(body.Vx) + ","
+                         + str(body.Vy) + ","
+                         + str(body.Vz) + ","
+                         + str(body.mass) + "\n")
+            data += body_data
+        file = open(file_name,'w')
+        file.write(data)
+        file.close()
 if __name__ == "__main__":
     solar_system = Asystem(file_name='N-body.csv')
     solar_system.print()
+    solar_system.write_to_file('test_output.csv')
+    test_system = Asystem(file_name='test_output.csv')
+    test_system.print()
     '''
     solar_system = Asystem()
     solar_system.print()
