@@ -2,6 +2,7 @@ import pandas as pd
 import re
 import random
 import math
+import time
 
 body = {'ident':0,
         'x':1,
@@ -10,10 +11,7 @@ body = {'ident':0,
         'Vx':4,
         'Vy':5,
         'Vz':6,
-        'mass':7,
-        'Vx_new':8,
-        'Vy_new':9,
-        'Vz_new':10, }
+        'mass':7}
 
 '''
 file = 'N-body.csv'
@@ -79,9 +77,6 @@ class Body(object):
             self.Vz = random.random()
         else:
             self.Vz = Vz
-        self.Vx_new = 0
-        self.Vy_new = 0
-        self.Vz_new = 0
         if mass == None:
             self.mass = random.random()
         else:
@@ -94,10 +89,7 @@ class Body(object):
               + ", Vx = " + str(self.Vx)
               + ", Vy = " + str(self.Vy)
               + ", Vz = " + str(self.Vz)
-              + ", mass = " + str(self.mass)
-              + ", Vx_new = " + str(self.Vx_new)
-              + ", Vy_new = " + str(self.Vy_new)
-              + ", Vz_new = " + str(self.Vz_new))
+              + ", mass = " + str(self.mass))
     def force_cal(self, other_body, grav_cons):
         dx = other_body.x - self.x
         dy = other_body.y - self.y
@@ -116,6 +108,11 @@ class Body(object):
         Vy_new = self.Vy + (fy * time_int / self.mass)
         Vz_new = self.Vz + (fz * time_int / self.mass)
         return (Vx_new, Vy_new, Vz_new)
+    def position_cal(self,time_int):
+        x = self.vx * time_int + self.x
+        y = self.vy * time_int + self.y
+        z = self.vz * time_int + self.z
+        return (x, y, z)
 
 '''
 Class holds bodies
@@ -163,18 +160,35 @@ class Asystem:
         file.write(data)
         file.close()
     def simulate(self, grav_cons, time_int, total_time):
+        start_time = time.time()
         time = 0
         while time < total_time:
+            time = time.time() - start_time
+            time.sleep(time_int)
             for body in self.system:
+                total_fx = 0
+                total_fy = 0
+                total_fz = 0
                 for other_body in self.system:
-                    None
+                    if body != other_body:
+                        force = body.force_cal(other_body, grav_cons)
+                        total_fx += force[0]
+                        total_fy += force[1]
+                        total_fz += force[2]
+                velocity = body.velocity_cal(total_fx,total_fy,total_fz,time_int)
+                body.Vx = velocity[0]
+                body.Vy = velocity[1]
+                body.Vz = velocity[2]
+            for body in self.system:
+                new_position = body.position_cal(time_int)
+                body.x = new_position[0]
+                body.y = new_position[1]
+                body.z = new_position[2]
 
 if __name__ == "__main__":
     solar_system = Asystem(file_name='N-body.csv')
     solar_system.print()
-    solar_system.write_to_file('test_output.csv')
-    test_system = Asystem(file_name='test_output.csv')
-    test_system.print()
+    solar_system.simulate(1, 1, 20)
     '''
     solar_system = Asystem()
     solar_system.print()
