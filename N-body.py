@@ -106,8 +106,16 @@ class Body(object):
         force = grav_cons * self.mass * other_body.mass / (distance ** 2)
         angleBAM = math.asin(dz/distance)
         angleMAN = math.atan(dy/dx)
-
-
+        AM = force * math.cos(angleBAM)
+        Fx = AM * math.cos(angleMAN)
+        Fy = AM * math.sin(angleMAN)
+        Fz = force * math.sin(angleBAM)
+        return (Fx, Fy, Fz)
+    def velocity_cal(self, fx, fy, fz, time_int):
+        Vx_new = self.Vx + (fx * time_int / self.mass)
+        Vy_new = self.Vy + (fy * time_int / self.mass)
+        Vz_new = self.Vz + (fz * time_int / self.mass)
+        return (Vx_new, Vy_new, Vz_new)
 
 '''
 Class holds bodies
@@ -142,8 +150,7 @@ class Asystem:
     def write_to_file(self,file_name):
         data = 'ident,x,y,z,Vx,Vy,Vx,mass\n'
         for body in self.system:
-            body_data = (bif body
-                force = grav_cons * ody.ident + ","
+            body_data = (body.ident + ","
                          + str(body.x) + ","
                          + str(body.y) + ","
                          + str(body.z) + ","
@@ -160,7 +167,7 @@ class Asystem:
         while time < total_time:
             for body in self.system:
                 for other_body in self.system:
-
+                    None
 
 if __name__ == "__main__":
     solar_system = Asystem(file_name='N-body.csv')
