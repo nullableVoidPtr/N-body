@@ -2,7 +2,10 @@ import pandas as pd
 import re
 import random
 import math
-import time
+from time import time
+from OpenGL.GL import *
+from OpenGL.GLUT import *
+from OpenGL.GLU import *
 
 body = {'ident':0,
         'x':1,
@@ -12,6 +15,23 @@ body = {'ident':0,
         'Vy':5,
         'Vz':6,
         'mass':7}
+WIDTH = 800
+HEIGHT = 800
+POINT_SIZE = 1
+POSITION_X = 112
+POSITION_Y = 20
+WORLD_LEFT = -1000
+WORLD_RIGHT = 1000
+WORLD_BOTTOM = -1000
+WORLD_TOP = 1000
+VIEW_ANGLE = 45
+RHO = 100
+WORLD_NEAR = 0.1
+WORLD_FAR = 1000000
+SCALE = 1
+BALL_SIZE = 0.5
+REFRESH_RATE = 0.001
+LINE_SIZE = 1000
 
 '''
 file = 'N-body.csv'
@@ -81,6 +101,13 @@ class Body(object):
             self.mass = random.random()
         else:
             self.mass = mass
+        self.zeroF()
+
+    def zeroF(self):
+        self.Fx = 0
+        self.Fy = 0
+        self.Fz = 0
+
     def print(self):
         print("ident: " + str(self.ident)
               + ", x = " + str(self.x)
@@ -90,45 +117,53 @@ class Body(object):
               + ", Vy = " + str(self.Vy)
               + ", Vz = " + str(self.Vz)
               + ", mass = " + str(self.mass))
-    def force_cal(self, other_body, grav_cons):
+
+    def cal_netforce(self, other_body):
         dx = other_body.x - self.x
         dy = other_body.y - self.y
         dz = other_body.z - self.z
-        distance = math.sqrt(dx ** 2 + dy ** 2 + dz ** 2)
-        force = grav_cons * self.mass * other_body.mass / (distance ** 2)
+        distance = math.sqrt(dx**2 + dy**2 + dz**2)
+        force = Asystem.GRAV_CONS * self.mass * other_body.mass / (distance**2)
         angleBAM = math.asin(dz/distance)
         angleMAN = math.atan(dy/dx)
         AM = force * math.cos(angleBAM)
-        Fx = AM * math.cos(angleMAN)
-        Fy = AM * math.sin(angleMAN)
-        Fz = force * math.sin(angleBAM)
-        return (Fx, Fy, Fz)
-    def velocity_cal(self, fx, fy, fz, time_int):
-        Vx_new = self.Vx + (fx * time_int / self.mass)
-        Vy_new = self.Vy + (fy * time_int / self.mass)
-        Vz_new = self.Vz + (fz * time_int / self.mass)
-        return (Vx_new, Vy_new, Vz_new)
-    def position_cal(self,time_int):
-        x = self.vx * time_int + self.x
-        y = self.vy * time_int + self.y
-        z = self.vz * time_int + self.z
-        return (x, y, z)
+        self.Fx += AM * math.cos(angleMAN)
+        self.Fy += AM * math.sin(angleMAN)
+        self.Fz += force * math.sin(angleBAM)
+
+    def cal_velocity(self, delta_t):
+        self.Vx = self.Vx + (self.Fx * delta_t / self.mass)
+        self.Vy = self.Vy + (self.Fy * delta_t / self.mass)
+        self.Vz = self.Vz + (self.Fz * delta_t / self.mass)
+
+    def cal_position(self, delta_t):
+        self.x = self.Vx * delta_t + self.x
+        self.y = self.Vy * delta_t + self.y
+        self.z = self.Vz * delta_t + self.z
 
 '''
 Class holds bodies
 '''
 
 class Asystem:
-    def __init__(self,n_bodies=10):
-        self.n_bodies = n_bodies
-        self.system = []
-        for i in range(self.n_bodies):
-            self.system.append(Body())
-    def __init__(self,file_name):
-        self.system = self.read_from_file(file_name)
+    GRAV_CONS = 6.67248E-11
+    delta_t = 0.5
+
+    def __init__(self,input):
+        if type(input) == int:
+            self.n_bodies = input
+            self.system = []
+            for i in range(self.n_bodies):
+                self.system.append(Body())
+        elif type(input) == str:
+            self.system = self.read_from_file(input)
+        else:
+            raise Exception("Invalid input type for init of Asystem")
+
     def print(self):
         for body in self.system:
             body.print()
+
     def read_from_file(self,file_name):
         bodies = []
         for line in open(file_name):
@@ -144,6 +179,7 @@ class Asystem:
                             float(fields[7]))
                 bodies.append(body)
         return bodies
+
     def write_to_file(self,file_name):
         data = 'ident,x,y,z,Vx,Vy,Vx,mass\n'
         for body in self.system:
@@ -159,37 +195,87 @@ class Asystem:
         file = open(file_name,'w')
         file.write(data)
         file.close()
-    def simulate(self, grav_cons, time_int, total_time):
-        start_time = time.time()
-        time = 0
-        while time < total_time:
-            time = time.time() - start_time
-            time.sleep(time_int)
-            for body in self.system:
-                total_fx = 0
-                total_fy = 0
-                total_fz = 0
-                for other_body in self.system:
-                    if body != other_body:
-                        force = body.force_cal(other_body, grav_cons)
-                        total_fx += force[0]
-                        total_fy += force[1]
-                        total_fz += force[2]
-                velocity = body.velocity_cal(total_fx,total_fy,total_fz,time_int)
-                body.Vx = velocity[0]
-                body.Vy = velocity[1]
-                body.Vz = velocity[2]
-            for body in self.system:
-                new_position = body.position_cal(time_int)
-                body.x = new_position[0]
-                body.y = new_position[1]
-                body.z = new_position[2]
+
+    def compute(self):
+        for body in self.system:
+            body.zeroF()
+            for other_body in self.system:
+                if body != other_body:
+                    body.cal_netforce(other_body)
+            body.cal_velocity(self.delta_t)
+        for body in self.system:
+            body.cal_position(self.delta_t)
+    '''
+    This function redraws the screen after the positions of particles have been updated
+    '''
+    def display(self):
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        gluLookAt(eyeRho * math.sin(eyePhi) * math.sin(eyeTheta), eyeRho * math.cos(eyePhi),
+                  eyeRho * math.sin(eyePhi) * math.cos(eyeTheta),
+                  look[0], look[1], look[2],
+                  0, upY, 0)
+
+        for body in self.system:
+            glPushMatrix()
+            glTranslated(SCALE * body.x, SCALE * body.y, SCALE * body.z)
+            glutSolidSphere(BALL_SIZE, 10, 10)
+            glPopMatrix()
+
+    def animate(self):
+        self.compute()
+        self.display()
+
+
+'''
+Initialization of graphics
+'''
+def init():
+    glClearColor(1.0,1.0,1.0,0.0)
+    glColor3f(0.0,0.0,0.0)
+    glPointSize(POINT_SIZE)
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+
+    #init lighting
+
+    mat_specular = (1.0, 1.0, 1.0, 1.0)
+    mat_shininess = (50)
+    light_position = (1.0, 1.0, 0.0, 0.0)
+    glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular)
+    glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess)
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position)
+
+    glEnable(GL_LIGHTING)
+    glEnable(GL_LIGHT0)
+    glEnable(GL_DEPTH_TEST)
+
+    global previousTime, eyeTheta, eyePhi, eyeRho, look, windowWidth, windowHeight, upY
+    displayRatio = 1 * WIDTH / HEIGHT
+    windowWidth = WIDTH
+    windowHeight = HEIGHT
+    previousTime = time()
+    eyeTheta = 0
+    eyePhi = math.pi * 0.5
+    eyeRho = RHO
+    upY = 1
+    look = (0, 0, 0)
+    gluPerspective(VIEW_ANGLE, displayRatio, WORLD_NEAR, WORLD_FAR)
 
 if __name__ == "__main__":
-    solar_system = Asystem(file_name='N-body.csv')
-    solar_system.print()
-    solar_system.simulate(1, 1, 20)
-    '''
-    solar_system = Asystem()
-    solar_system.print()
-    '''
+
+    planet_system = Asystem(10)
+
+    glutInit()
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB)
+    glutInitWindowSize(WIDTH, HEIGHT)
+    glutInitWindowPosition(POSITION_X, POSITION_Y)
+    glutCreateWindow("N-Body")
+
+    glutDisplayFunc(planet_system.display)
+    glutIdleFunc(planet_system.animate)
+
+    init()
+
+    glutMainLoop()
