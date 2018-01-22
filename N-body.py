@@ -1,5 +1,5 @@
 import pandas as pd
-import re
+import sys
 import random
 import math
 from time import time
@@ -119,35 +119,33 @@ class Body(object):
               + ", mass = " + str(self.mass))
 
     def cal_netforce(self, other_body):
-        dx = other_body.x - self.x
-        dy = other_body.y - self.y
-        dz = other_body.z - self.z
-        distance = math.sqrt(dx**2 + dy**2 + dz**2)
-        force = Asystem.GRAV_CONS * self.mass * other_body.mass / (distance**2)
-        angleBAM = math.asin(dz/distance)
-        angleMAN = math.atan(dy/dx)
-        AM = force * math.cos(angleBAM)
-        self.Fx += AM * math.cos(angleMAN)
-        self.Fy += AM * math.sin(angleMAN)
-        self.Fz += force * math.sin(angleBAM)
+        Dx = other_body.x - self.x
+        Dy = other_body.y - self.y
+        Dz = other_body.z - self.z
+        distance = math.sqrt(Dx**2 + Dy**2 + Dz**2)
+        con = Asystem.GRAV_CONS * self.mass * other_body.mass / (distance**2)
+        gd = con / distance
+        self.Fx += gd * Dx
+        self.Fy += gd * Dy
+        self.Fz += gd * Dz
 
-    def cal_velocity(self, delta_t):
-        self.Vx = self.Vx + (self.Fx * delta_t / self.mass)
-        self.Vy = self.Vy + (self.Fy * delta_t / self.mass)
-        self.Vz = self.Vz + (self.Fz * delta_t / self.mass)
+    def cal_velocity(self):
+        self.Vx += self.Fx / self.mass
+        self.Vy += self.Fy / self.mass
+        self.Vz += self.Fz / self.mass
 
-    def cal_position(self, delta_t):
-        self.x = self.Vx * delta_t + self.x
-        self.y = self.Vy * delta_t + self.y
-        self.z = self.Vz * delta_t + self.z
+    def cal_position(self):
+        self.x += self.Vx * Asystem.delta_t
+        self.y += self.Vy * Asystem.delta_t
+        self.z += self.Vz * Asystem.delta_t
 
 '''
 Class holds bodies
 '''
 
 class Asystem:
-    GRAV_CONS = 6.67248E-11
-    delta_t = 0.5
+    GRAV_CONS = 2          #6.67408E-11
+    delta_t = 0.001
 
     def __init__(self,input):
         if type(input) == int:
@@ -202,9 +200,9 @@ class Asystem:
             for other_body in self.system:
                 if body != other_body:
                     body.cal_netforce(other_body)
-            body.cal_velocity(self.delta_t)
+            body.cal_velocity()
         for body in self.system:
-            body.cal_position(self.delta_t)
+            body.cal_position()
     '''
     This function redraws the screen after the positions of particles have been updated
     '''
@@ -222,11 +220,11 @@ class Asystem:
             glTranslated(SCALE * body.x, SCALE * body.y, SCALE * body.z)
             glutSolidSphere(BALL_SIZE, 10, 10)
             glPopMatrix()
+            glutSwapBuffers()
 
     def animate(self):
         self.compute()
         self.display()
-
 
 '''
 Initialization of graphics
@@ -265,9 +263,9 @@ def init():
 
 if __name__ == "__main__":
 
-    planet_system = Asystem(10)
+    planet_system = Asystem('N-body.csv')
 
-    glutInit()
+    glutInit(sys.argv)
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB)
     glutInitWindowSize(WIDTH, HEIGHT)
     glutInitWindowPosition(POSITION_X, POSITION_Y)
