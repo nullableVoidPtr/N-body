@@ -1,6 +1,6 @@
 import pandas as pd
 import sys
-import random
+from random import random, uniform
 import math
 from time import time
 from OpenGL.GL import *
@@ -28,6 +28,7 @@ VIEW_ANGLE = 45
 RHO = 100
 WORLD_NEAR = 0.1
 WORLD_FAR = 1000000
+global SCALE
 SCALE = 1
 BALL_SIZE = 0.5
 REFRESH_RATE = 0.001
@@ -64,7 +65,6 @@ print(bodies[2][body['x']])
 '''
 Class holds attributes of a single body
 '''
-
 class Body(object):
     global_ident = 0
     def __init__(self, ident=None, x=None, y=None,z=None,Vx=None,Vy=None,Vz=None,mass=None):
@@ -74,31 +74,31 @@ class Body(object):
         else:
             self.ident = ident
         if x == None:
-            self.x = random.random()
+            self.x = random()
         else:
             self.x = x
         if y == None:
-            self.y = random.random()
+            self.y = random()
         else:
             self.y = y
         if z == None:
-            self.z = random.random()
+            self.z = random()
         else:
             self.z = z
         if Vx == None:
-            self.Vx = random.random()
+            self.Vx = random()
         else:
             self.Vx = Vx
         if Vy == None:
-            self.Vy = random.random()
+            self.Vy = random()
         else:
             self.Vy = Vy
         if Vz == None:
-            self.Vz = random.random()
+            self.Vz = random()
         else:
             self.Vz = Vz
         if mass == None:
-            self.mass = random.random()
+            self.mass = random()
         else:
             self.mass = mass
         self.zeroF()
@@ -139,13 +139,14 @@ class Body(object):
         self.y += self.Vy * Asystem.delta_t
         self.z += self.Vz * Asystem.delta_t
 
+
+
 '''
 Class holds bodies
 '''
-
 class Asystem:
-    GRAV_CONS = 2          #6.67408E-11
-    delta_t = 0.001
+    GRAV_CONS = 1.5          #6.67408E-11
+    delta_t = 0.01
 
     def __init__(self,input):
         if type(input) == int:
@@ -210,10 +211,11 @@ class Asystem:
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        gluLookAt(eyeRho * math.sin(eyePhi) * math.sin(eyeTheta), eyeRho * math.cos(eyePhi),
-                  eyeRho * math.sin(eyePhi) * math.cos(eyeTheta),
-                  look[0], look[1], look[2],
-                  0, upY, 0)
+        gluLookAt(init.eyeRho * math.sin(init.eyePhi) * math.sin(init.eyeTheta),
+                  init.eyeRho * math.cos(init.eyePhi),
+                  init.eyeRho * math.sin(init.eyePhi) * math.cos(init.eyeTheta),
+                  init.look[0], init.look[1], init.look[2],
+                  0, init.upY, 0)
 
         for body in self.system:
             glPushMatrix()
@@ -226,44 +228,101 @@ class Asystem:
         self.compute()
         self.display()
 
+
+class Definition:
+    def __init__(self):             #Initialization of graphics
+        glClearColor(0.0,0.0,0.0,0.0)
+        glColor3f(1.0,1.0,1.0)
+        glPointSize(POINT_SIZE)
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+
+        #init lighting
+
+        mat_specular = (1.0, 1.0, 1.0, 1.0)
+        mat_shininess = (50)
+        light_position = (1.0, 1.0, 0.0, 0.0)
+        glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular)
+        glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess)
+        glLightfv(GL_LIGHT0, GL_POSITION, light_position)
+
+        glEnable(GL_LIGHTING)
+        glEnable(GL_LIGHT0)
+        glEnable(GL_DEPTH_TEST)
+
+        #global previousTime, eyeTheta, eyePhi, eyeRho, look, windowWidth, windowHeight, upY
+        self.displayRatio = 1 * WIDTH / HEIGHT
+        self.windowWidth = WIDTH
+        self.windowHeight = HEIGHT
+        self.previousTime = time()
+        self.eyeTheta = 0
+        self.eyePhi = math.pi * 0.5
+        self.eyeRho = RHO
+        self.upY = 1
+        self.look = [0, 0, 0]
+        self.SCALE = SCALE
+        gluPerspective(VIEW_ANGLE, self.displayRatio, WORLD_NEAR, WORLD_FAR)
+        glutKeyboardFunc(self.keyboard)
+        glutReshapeFunc(self.reshape)
+    def keyboard(self, theKey, mouseX, mouseY): #Manipulate with the image
+        if (theKey == b'x' or theKey == b'X'):
+            sys.exit()
+        if (theKey == b'i' or theKey == b'I'):
+            self.eyePhi -= math.pi / 20
+        if (theKey == b'0'):
+            self.eyePhi = 2 * math.pi
+        elif (theKey == b'm' or theKey == b'M'):
+            self.eyePhi += math.pi / 20
+        elif (theKey == b'j' or theKey == b'J'):
+            self.eyeTheta -= math.pi / 20
+        elif (theKey == b'k' or theKey == b'K'):
+            self.eyeTheta += math.pi / 20
+        elif (theKey == b','):
+            self.eyeRho += 0.5
+        elif (theKey == b'.' or theKey == b'I'):
+            self.eyeRho -= 0.5
+        elif (theKey == b'w' or theKey == b'W'):
+            self.look[1] += 0.5
+        elif (theKey == b'z' or theKey == b'Z'):
+            self.look[1] -= 0.5
+        elif (theKey == b'a' or theKey == b'A'):
+            self.look[0] -= 0.5
+        elif (theKey == b's' or theKey == b'S'):
+            self.look[0] += 0.5
+        elif (theKey == b'+'):
+            self.SCALE *= 1.1
+        elif (theKey == b'-'):
+            self.SCALE *= 0.9
+        if math.sin(self.eyePhi) > 0: self.upY = 1
+        else: self.upY = 1
+    def reshape(self, width, height):             #Manipulate with the window
+        self.displayRatio = 1 * width / height
+        self.windowWidth = width
+        self.windowHeight = height
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        gluPerspective(VIEW_ANGLE, self.displayRatio, WORLD_NEAR, WORLD_FAR)
+        glViewport(0, 0, self.windowWidth, self.windowHeight)
+
+
+
 '''
-Initialization of graphics
+Randomly generates planetary system
 '''
-def init():
-    glClearColor(1.0,1.0,1.0,0.0)
-    glColor3f(0.0,0.0,0.0)
-    glPointSize(POINT_SIZE)
-    glMatrixMode(GL_PROJECTION)
-    glLoadIdentity()
+def planet_system(n_bodies):
+    system = Asystem(0)
+    system.system.append(Body(1,0,0,0,0,0,0,300))
+    position = 20
+    velocity = 20
+    for i in range(n_bodies):
+        system.system.append(Body(i,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(0,10)))
+    return system
 
-    #init lighting
 
-    mat_specular = (1.0, 1.0, 1.0, 1.0)
-    mat_shininess = (50)
-    light_position = (1.0, 1.0, 0.0, 0.0)
-    glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular)
-    glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess)
-    glLightfv(GL_LIGHT0, GL_POSITION, light_position)
-
-    glEnable(GL_LIGHTING)
-    glEnable(GL_LIGHT0)
-    glEnable(GL_DEPTH_TEST)
-
-    global previousTime, eyeTheta, eyePhi, eyeRho, look, windowWidth, windowHeight, upY
-    displayRatio = 1 * WIDTH / HEIGHT
-    windowWidth = WIDTH
-    windowHeight = HEIGHT
-    previousTime = time()
-    eyeTheta = 0
-    eyePhi = math.pi * 0.5
-    eyeRho = RHO
-    upY = 1
-    look = (0, 0, 0)
-    gluPerspective(VIEW_ANGLE, displayRatio, WORLD_NEAR, WORLD_FAR)
 
 if __name__ == "__main__":
 
-    planet_system = Asystem('N-body.csv')
+    planet_system = planet_system(10)
 
     glutInit(sys.argv)
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB)
@@ -274,6 +333,6 @@ if __name__ == "__main__":
     glutDisplayFunc(planet_system.display)
     glutIdleFunc(planet_system.animate)
 
-    init()
+    init = Definition()
 
     glutMainLoop()
