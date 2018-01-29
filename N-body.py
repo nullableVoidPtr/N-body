@@ -6,60 +6,30 @@ from time import time
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
+import configparser
 
-body = {'ident':0,
-        'x':1,
-        'y':2,
-        'z':3,
-        'Vx':4,
-        'Vy':5,
-        'Vz':6,
-        'mass':7}
-WIDTH = 800
-HEIGHT = 800
-POINT_SIZE = 1
-POSITION_X = 112
-POSITION_Y = 20
-WORLD_LEFT = -1000
-WORLD_RIGHT = 1000
-WORLD_BOTTOM = -1000
-WORLD_TOP = 1000
-VIEW_ANGLE = 45
-RHO = 100
-WORLD_NEAR = 0.1
-WORLD_FAR = 1000000
-global SCALE
-SCALE = 1
-BALL_SIZE = 0.5
-REFRESH_RATE = 0.001
-LINE_SIZE = 1000
+config = configparser.ConfigParser()
+config.read('configure.ini')
 
-'''
-file = 'N-body.csv'
-
-df = pd.read_csv(file) #reads file
-
-fb = re.search("\n",repr(df)) #searches for first break
-hn = fb.start() #obtains last string index of heading
-heading = repr(df)[:hn].split()
-
-vals = repr(df).split()
-
-count = 11
-global bodies
-bodies = []
-no_body = int(len(vals) / 12)
-one_body = []
-while count < len(vals):
-    count+=1
-    one_body.append(vals[count - 1])
-    if (count + 1) % 12 == 0:
-        bodies.append(one_body)
-        one_body = []
-
-print(bodies)
-print(bodies[2][body['x']])
-'''
+WIDTH = int(config['CONFIGURE']['WIDTH'])
+HEIGHT = int(config['CONFIGURE']['HEIGHT'])
+POINT_SIZE = float(config['CONFIGURE']['POINT_SIZE'])
+POSITION_X = int(config['CONFIGURE']['POSITION_X'])
+POSITION_Y = int(config['CONFIGURE']['POSITION_Y'])
+WORLD_LEFT = float(config['CONFIGURE']['WORLD_LEFT'])
+WORLD_RIGHT = float(config['CONFIGURE']['WORLD_RIGHT'])
+WORLD_BOTTOM = float(config['CONFIGURE']['WORLD_BOTTOM'])
+WORLD_TOP = float(config['CONFIGURE']['WORLD_TOP'])
+VIEW_ANGLE = float(config['CONFIGURE']['VIEW_ANGLE'])
+RHO = float(config['CONFIGURE']['RHO'])
+WORLD_NEAR = float(config['CONFIGURE']['WORLD_NEAR'])
+WORLD_FAR = float(config['CONFIGURE']['WORLD_FAR'])
+SCALE = float(config['CONFIGURE']['SCALE'])
+BALL_SIZE = float(config['CONFIGURE']['BALL_SIZE'])
+REFRESH_RATE = float(config['CONFIGURE']['REFRESH_RATE'])
+LINE_SIZE = float(config['CONFIGURE']['LINE_SIZE'])
+GRAV_CONS = float(config['CONFIGURE']['GRAV_CONS'])
+DELTA_T = float(config['CONFIGURE']['DELTA_T'])
 
 
 '''
@@ -123,7 +93,7 @@ class Body(object):
         Dy = other_body.y - self.y
         Dz = other_body.z - self.z
         distance = math.sqrt(Dx**2 + Dy**2 + Dz**2)
-        con = Asystem.GRAV_CONS * self.mass * other_body.mass / (distance**2)
+        con = GRAV_CONS * self.mass * other_body.mass / (distance**2)
         gd = con / distance
         self.Fx += gd * Dx
         self.Fy += gd * Dy
@@ -135,9 +105,9 @@ class Body(object):
         self.Vz += self.Fz / self.mass
 
     def cal_position(self):
-        self.x += self.Vx * Asystem.delta_t
-        self.y += self.Vy * Asystem.delta_t
-        self.z += self.Vz * Asystem.delta_t
+        self.x += self.Vx * DELTA_T
+        self.y += self.Vy * DELTA_T
+        self.z += self.Vz * DELTA_T
 
 
 
@@ -145,8 +115,7 @@ class Body(object):
 Class holds bodies
 '''
 class Asystem:
-    GRAV_CONS = 1.5          #6.67408E-11
-    delta_t = 0.01
+
 
     def __init__(self,input):
         if type(input) == int:
@@ -220,7 +189,7 @@ class Asystem:
         for body in self.system:
             glPushMatrix()
             glTranslated(SCALE * body.x, SCALE * body.y, SCALE * body.z)
-            glutSolidSphere(BALL_SIZE, 10, 10)
+            glutSolidSphere(BALL_SIZE, 5, 5)
             glPopMatrix()
             glutSwapBuffers()
 
@@ -271,27 +240,27 @@ class Definition:
             self.eyePhi -= math.pi / 20
         if (theKey == b'0'):
             self.eyePhi = 2 * math.pi
-        elif (theKey == b'm' or theKey == b'M'):
+        elif (theKey == b'o' or theKey == b'O'):
             self.eyePhi += math.pi / 20
         elif (theKey == b'j' or theKey == b'J'):
             self.eyeTheta -= math.pi / 20
         elif (theKey == b'k' or theKey == b'K'):
             self.eyeTheta += math.pi / 20
-        elif (theKey == b','):
+        elif (theKey == b'n' or theKey == b'N'):
             self.eyeRho += 0.5
-        elif (theKey == b'.' or theKey == b'I'):
+        elif (theKey == b'm' or theKey == b'M'):
             self.eyeRho -= 0.5
         elif (theKey == b'w' or theKey == b'W'):
             self.look[1] += 0.5
-        elif (theKey == b'z' or theKey == b'Z'):
+        elif (theKey == b's' or theKey == b'S'):
             self.look[1] -= 0.5
         elif (theKey == b'a' or theKey == b'A'):
             self.look[0] -= 0.5
-        elif (theKey == b's' or theKey == b'S'):
+        elif (theKey == b'd' or theKey == b'D'):
             self.look[0] += 0.5
-        elif (theKey == b'+'):
+        elif (theKey == b'e' or theKey == b'e'):
             self.SCALE *= 1.1
-        elif (theKey == b'-'):
+        elif (theKey == b'q' or theKey == b'q'):
             self.SCALE *= 0.9
         if math.sin(self.eyePhi) > 0: self.upY = 1
         else: self.upY = 1
@@ -322,7 +291,7 @@ def planet_system(n_bodies):
 
 if __name__ == "__main__":
 
-    planet_system = planet_system(10)
+    planet_system = Asystem('N-body.csv')
 
     glutInit(sys.argv)
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB)
