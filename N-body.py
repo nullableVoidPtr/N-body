@@ -12,6 +12,15 @@ config = configparser.ConfigParser()
 config.read('configure.ini')
 
 WIDTH = int(config['CONFIGURE']['WIDTH'])
+
+
+'''
+Randomly generates planetary system
+'''
+def planet_system(n_bodies):
+    system = Asystem(0)
+    system.system.append(Body(1,0,0,0,0,0,0,500))
+    position = 20
 HEIGHT = int(config['CONFIGURE']['HEIGHT'])
 POINT_SIZE = float(config['CONFIGURE']['POINT_SIZE'])
 POSITION_X = int(config['CONFIGURE']['POSITION_X'])
@@ -188,8 +197,8 @@ class Asystem:
 
         for body in self.system:
             glPushMatrix()
-            glTranslated(SCALE * body.x, SCALE * body.y, SCALE * body.z)
-            glutSolidSphere(BALL_SIZE, 5, 5)
+            glTranslated(init.SCALE * body.x, init.SCALE * body.y, init.SCALE * body.z)
+            glutSolidSphere(BALL_SIZE, 20, 20)
             glPopMatrix()
             glutSwapBuffers()
 
@@ -280,9 +289,9 @@ Randomly generates planetary system
 '''
 def planet_system(n_bodies):
     system = Asystem(0)
-    system.system.append(Body(1,0,0,0,0,0,0,300))
+    system.system.append(Body(1,0,0,0,0,0,0,500))
     position = 20
-    velocity = 20
+    velocity = 50
     for i in range(n_bodies):
         system.system.append(Body(i,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(0,10)))
     return system
@@ -291,7 +300,7 @@ def planet_system(n_bodies):
 
 if __name__ == "__main__":
 
-    planet_system = Asystem('N-body.csv')
+    planet_system = planet_system(10)
 
     glutInit(sys.argv)
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB)
