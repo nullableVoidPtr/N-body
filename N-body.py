@@ -1,4 +1,3 @@
-import pandas as pd
 import sys
 from random import random, uniform
 import math
@@ -7,20 +6,12 @@ from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 import configparser
+from astropy.time import Time as astrotime
 
 config = configparser.ConfigParser()
 config.read('configure.ini')
 
 WIDTH = int(config['CONFIGURE']['WIDTH'])
-
-
-'''
-Randomly generates planetary system
-'''
-def planet_system(n_bodies):
-    system = Asystem(0)
-    system.system.append(Body(1,0,0,0,0,0,0,500))
-    position = 20
 HEIGHT = int(config['CONFIGURE']['HEIGHT'])
 POINT_SIZE = float(config['CONFIGURE']['POINT_SIZE'])
 POSITION_X = int(config['CONFIGURE']['POSITION_X'])
@@ -46,12 +37,16 @@ Class holds attributes of a single body
 '''
 class Body(object):
     global_ident = 0
-    def __init__(self, ident=None, x=None, y=None,z=None,Vx=None,Vy=None,Vz=None,mass=None):
+    def __init__(self, ident=None, time=None, x=None, y=None,z=None,Vx=None,Vy=None,Vz=None,mass=None,radius=None):
         if ident == None:
             self.ident = Body.global_ident
             Body.global_ident += 1
         else:
             self.ident = ident
+        if time == None:
+            self.x = 2452170.375 #2001-09-17T21:00:00.000
+        else:
+            self.time = time
         if x == None:
             self.x = random()
         else:
@@ -80,6 +75,10 @@ class Body(object):
             self.mass = random()
         else:
             self.mass = mass
+        if radius == None:
+            self.radius = random()
+        else:
+            self.radius = radius
         self.zeroF()
 
     def zeroF(self):
@@ -88,14 +87,16 @@ class Body(object):
         self.Fz = 0
 
     def print(self):
-        print("ident: " + str(self.ident)
+        print("ident = " + str(self.ident)
+              + ", time =  " + str(self.time) + " = " + str(astrotime(self.time, format = "jd", scale = 'utc').isot)
               + ", x = " + str(self.x)
               + ", y = " + str(self.y)
               + ", z = " + str(self.z)
               + ", Vx = " + str(self.Vx)
               + ", Vy = " + str(self.Vy)
               + ", Vz = " + str(self.Vz)
-              + ", mass = " + str(self.mass))
+              + ", mass = " + str(self.mass)
+              + ", radius = " + str(self.radius))
 
     def cal_netforce(self, other_body):
         Dx = other_body.x - self.x
@@ -153,21 +154,25 @@ class Asystem:
                             float(fields[4]),
                             float(fields[5]),
                             float(fields[6]),
-                            float(fields[7]))
+                            float(fields[7]),
+                            float(fields[8]),
+                            float(fields[9]))
                 bodies.append(body)
         return bodies
 
     def write_to_file(self,file_name):
-        data = 'ident,x,y,z,Vx,Vy,Vx,mass\n'
+        data = 'ident, time, , x, y, z, Vx, Vy, Vx, mass, radius\n'
         for body in self.system:
-            body_data = (body.ident + ","
+            body_data = (str(body.ident) + ","
+                         + str(body.time) + ","
                          + str(body.x) + ","
                          + str(body.y) + ","
                          + str(body.z) + ","
                          + str(body.Vx) + ","
                          + str(body.Vy) + ","
                          + str(body.Vz) + ","
-                         + str(body.mass) + "\n")
+                         + str(body.mass) + ","
+                         + str(body.radius) + "\n")
             data += body_data
         file = open(file_name,'w')
         file.write(data)
@@ -182,6 +187,7 @@ class Asystem:
             body.cal_velocity()
         for body in self.system:
             body.cal_position()
+            body.time += DELTA_T
     '''
     This function redraws the screen after the positions of particles have been updated
     '''
@@ -289,11 +295,11 @@ Randomly generates planetary system
 '''
 def planet_system(n_bodies):
     system = Asystem(0)
-    system.system.append(Body(1,0,0,0,0,0,0,500))
+    system.system.append(Body(1,2452170.375,0,0,0,0,0,0,500,5))
     position = 20
-    velocity = 50
+    velocity = 1000
     for i in range(n_bodies):
-        system.system.append(Body(i,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(0,10)))
+        system.system.append(Body(i,2452170.375,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(0,10),uniform(0,10)))
     return system
 
 
