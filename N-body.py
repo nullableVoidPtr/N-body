@@ -29,8 +29,10 @@ BALL_SIZE = float(config['CONFIGURE']['BALL_SIZE'])
 REFRESH_RATE = float(config['CONFIGURE']['REFRESH_RATE'])
 LINE_SIZE = float(config['CONFIGURE']['LINE_SIZE'])
 GRAV_CONS = float(config['CONFIGURE']['GRAV_CONS'])
-DELTA_T = float(config['CONFIGURE']['DELTA_T'])
-
+SEC_PER_YEAR = float(config['CONFIGURE']['SEC_PER_YEAR'])
+NO_SECONDS = float(config['CONFIGURE']['NO_SECONDS'])
+DAYS_PER_SECOND = float(config['CONFIGURE']['DAYS_PER_SECOND'])
+DELTA_T = SEC_PER_YEAR * NO_SECONDS
 
 '''
 Class holds attributes of a single body
@@ -146,7 +148,7 @@ class Asystem:
         bodies = []
         for line in open(file_name):
             fields = line.split(",")
-            if fields[1] != 'x':
+            if fields[0] != '     ident':
                 body = Body(str(fields[0]),
                             float(fields[1]),
                             float(fields[2]),
@@ -187,7 +189,18 @@ class Asystem:
             body.cal_velocity()
         for body in self.system:
             body.cal_position()
-            body.time += DELTA_T
+            body.time += DELTA_T * DAYS_PER_SECOND
+
+    def if_collision(self):
+        for i in range(len(self.system)):
+            for j in range(len(self.system)-i):
+                if i != j:
+                    x_dif = self.system[i].x - self.system[j].x
+                    y_dif = self.system[i].y - self.system[j].y
+                    z_dif = self.system[i].z - self.system[j].z
+                    distance = (x_dif**2 + y_dif**2 + z_dif**2)**0.5
+                    if distance <= self.system[i].radius + self.system[j].radius:
+                        print("Collision of " + str(self.system[i].ident) + " and " + str(self.system[j].ident) + " @ " + astrotime(self.system[i].time, format = 'jd').iso)
     '''
     This function redraws the screen after the positions of particles have been updated
     '''
@@ -204,13 +217,14 @@ class Asystem:
         for body in self.system:
             glPushMatrix()
             glTranslated(init.SCALE * body.x, init.SCALE * body.y, init.SCALE * body.z)
-            glutSolidSphere(BALL_SIZE, 20, 20)
+            glutSolidSphere(BALL_SIZE * body.radius, 20, 20)
             glPopMatrix()
             glutSwapBuffers()
 
     def animate(self):
         self.compute()
         self.display()
+        self.if_collision()
 
 
 class Definition:
@@ -295,7 +309,7 @@ Randomly generates planetary system
 '''
 def planet_system(n_bodies):
     system = Asystem(0)
-    system.system.append(Body(1,2452170.375,0,0,0,0,0,0,500,5))
+    system.system.append(Body(1,2452170.375,0,0,0,0,0,0,500,20))
     position = 20
     velocity = 1000
     for i in range(n_bodies):
@@ -306,8 +320,8 @@ def planet_system(n_bodies):
 
 if __name__ == "__main__":
 
+    #planet_system = Asystem("Solar_system.csv")
     planet_system = planet_system(10)
-
     glutInit(sys.argv)
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB)
     glutInitWindowSize(WIDTH, HEIGHT)
