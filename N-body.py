@@ -28,11 +28,9 @@ SCALE = float(config['CONFIGURE']['SCALE'])
 BALL_SIZE = float(config['CONFIGURE']['BALL_SIZE'])
 REFRESH_RATE = float(config['CONFIGURE']['REFRESH_RATE'])
 LINE_SIZE = float(config['CONFIGURE']['LINE_SIZE'])
-GRAV_CONS = float(config['CONFIGURE']['GRAV_CONS'])
-SEC_PER_YEAR = float(config['CONFIGURE']['SEC_PER_YEAR'])
-NO_SECONDS = float(config['CONFIGURE']['NO_SECONDS'])
-DAYS_PER_SECOND = float(config['CONFIGURE']['DAYS_PER_SECOND'])
-DELTA_T = SEC_PER_YEAR * NO_SECONDS
+GRAV_CONS = float(config['CONFIGURE']['GRAV_CONS']) * 1E-9 #Convert meter cubed to kilometer cubed
+DELTA_T = float(config['CONFIGURE']['DELTA_T'])
+SEC_PER_DAY = float(config['CONFIGURE']['SEC_PER_DAY'])
 
 '''
 Class holds attributes of a single body
@@ -112,9 +110,9 @@ class Body(object):
         self.Fz += gd * Dz
 
     def cal_velocity(self):
-        self.Vx += self.Fx / self.mass
-        self.Vy += self.Fy / self.mass
-        self.Vz += self.Fz / self.mass
+        self.Vx += self.Fx * DELTA_T / self.mass
+        self.Vy += self.Fy * DELTA_T / self.mass
+        self.Vz += self.Fz * DELTA_T / self.mass
 
     def cal_position(self):
         self.x += self.Vx * DELTA_T
@@ -189,7 +187,7 @@ class Asystem:
             body.cal_velocity()
         for body in self.system:
             body.cal_position()
-            body.time += DELTA_T * DAYS_PER_SECOND
+            body.time += DELTA_T / SEC_PER_DAY
 
     def if_collision(self):
         for i in range(len(self.system)):
@@ -276,9 +274,9 @@ class Definition:
         elif (theKey == b'k' or theKey == b'K'):
             self.eyeTheta += math.pi / 20
         elif (theKey == b'n' or theKey == b'N'):
-            self.eyeRho += 0.5
+            self.eyeRho += 3
         elif (theKey == b'm' or theKey == b'M'):
-            self.eyeRho -= 0.5
+            self.eyeRho -= 3
         elif (theKey == b'w' or theKey == b'W'):
             self.look[1] += 0.5
         elif (theKey == b's' or theKey == b'S'):
