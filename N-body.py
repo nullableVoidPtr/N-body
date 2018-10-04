@@ -94,6 +94,7 @@ class Body(object):
             self.color3 = random()
         else:
             self.color3 = color3
+        self.coord = []
         self.zeroF()
 
     def zeroF(self):
@@ -136,6 +137,7 @@ class Body(object):
         self.x += self.Vx * DELTA_T
         self.y += self.Vy * DELTA_T
         self.z += self.Vz * DELTA_T
+        self.coord.append((self.x,self.y,self.z))
 
 
 
@@ -243,7 +245,14 @@ class Asystem:
             glColor3f(body.color1/255, body.color2/255, body.color3/255)
             glutSolidSphere(BALL_SIZE * (body.radius**init.EXPONENT), 20, 20)
             glPopMatrix()
+            glLineWidth(1)
+            glBegin(GL_LINE_STRIP)
+            glColor(body.color1,body.color2,body.color3)
+            for point in body.coord:
+                glVertex3f(init.SCALE * point[0], init.SCALE * point[1], init.SCALE * point[2])
+            glEnd()
             glutSwapBuffers()
+
 
     def animate(self):
         self.compute()
