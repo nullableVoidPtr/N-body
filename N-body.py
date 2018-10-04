@@ -29,15 +29,18 @@ BALL_SIZE = float(config['CONFIGURE']['BALL_SIZE'])
 REFRESH_RATE = float(config['CONFIGURE']['REFRESH_RATE'])
 LINE_SIZE = float(config['CONFIGURE']['LINE_SIZE'])
 GRAV_CONS = float(config['CONFIGURE']['GRAV_CONS']) * 1E-9 #Convert meter cubed to kilometer cubed
-DELTA_T = float(config['CONFIGURE']['DELTA_T'])
+NORM_DELTA_T = float(config['CONFIGURE']['NORM_DELTA_T'])
+FINE_DELTA_T = float(config['CONFIGURE']['FINE_DELTA_T'])
 SEC_PER_DAY = float(config['CONFIGURE']['SEC_PER_DAY'])
+EXPONENT = float(config['CONFIGURE']['EXPONENT'])
+DELTA_T = NORM_DELTA_T
 
 '''
 Class holds attributes of a single body
 '''
 class Body(object):
     global_ident = 0
-    def __init__(self, ident=None, time=None, x=None, y=None,z=None,Vx=None,Vy=None,Vz=None,mass=None,radius=None):
+    def __init__(self, ident=None, time=None, x=None, y=None,z=None,Vx=None,Vy=None,Vz=None,mass=None,radius=None,color1=None,color2=None,color3=None):
         if ident == None:
             self.ident = Body.global_ident
             Body.global_ident += 1
@@ -79,6 +82,18 @@ class Body(object):
             self.radius = random()
         else:
             self.radius = radius
+        if color1 == None:
+            self.color1 = random()
+        else:
+            self.color1 = color1
+        if color2 == None:
+            self.color2 = random()
+        else:
+            self.color2 = color2
+        if color3 == None:
+            self.color3 = random()
+        else:
+            self.color3 = color3
         self.zeroF()
 
     def zeroF(self):
@@ -96,7 +111,10 @@ class Body(object):
               + ", Vy = " + str(self.Vy)
               + ", Vz = " + str(self.Vz)
               + ", mass = " + str(self.mass)
-              + ", radius = " + str(self.radius))
+              + ", radius = " + str(self.radius)
+              + ", color1 = " + str(self.color1)
+              + ", color2 = " + str(self.color2)
+              + ", color3 = " + str(self.color3))
 
     def cal_netforce(self, other_body):
         Dx = other_body.x - self.x
@@ -146,7 +164,7 @@ class Asystem:
         bodies = []
         for line in open(file_name):
             fields = line.split(",")
-            if fields[0] != '     ident':
+            if fields[0] != 'ident':
                 body = Body(str(fields[0]),
                             float(fields[1]),
                             float(fields[2]),
@@ -156,12 +174,15 @@ class Asystem:
                             float(fields[6]),
                             float(fields[7]),
                             float(fields[8]),
-                            float(fields[9]))
+                            float(fields[9]),
+                            float(fields[10]),
+                            float(fields[11]),
+                            float(fields[12]))
                 bodies.append(body)
         return bodies
 
     def write_to_file(self,file_name):
-        data = 'ident, time, , x, y, z, Vx, Vy, Vx, mass, radius\n'
+        data = 'ident,             JDTDB,                      X,                      Y,                      Z,              VX (km/s),              VY (km/s),              VZ (km/s),             mass (kg),          radius (km),  color1,   color2,    color3,\n'
         for body in self.system:
             body_data = (str(body.ident) + ","
                          + str(body.time) + ","
@@ -172,7 +193,10 @@ class Asystem:
                          + str(body.Vy) + ","
                          + str(body.Vz) + ","
                          + str(body.mass) + ","
-                         + str(body.radius) + "\n")
+                         + str(body.radius) + ","
+                         + str(body.color1) + ","
+                         + str(body.color2) + ","
+                         + str(body.color3) + "\n")
             data += body_data
         file = open(file_name,'w')
         file.write(data)
@@ -197,6 +221,7 @@ class Asystem:
                     y_dif = self.system[i].y - self.system[j].y
                     z_dif = self.system[i].z - self.system[j].z
                     distance = (x_dif**2 + y_dif**2 + z_dif**2)**0.5
+
                     if distance <= self.system[i].radius + self.system[j].radius:
                         print("Collision of " + str(self.system[i].ident) + " and " + str(self.system[j].ident) + " @ " + astrotime(self.system[i].time, format = 'jd').iso)
     '''
@@ -215,7 +240,8 @@ class Asystem:
         for body in self.system:
             glPushMatrix()
             glTranslated(init.SCALE * body.x, init.SCALE * body.y, init.SCALE * body.z)
-            glutSolidSphere(BALL_SIZE * body.radius, 20, 20)
+            glColor3f(body.color1/255, body.color2/255, body.color3/255)
+            glutSolidSphere(BALL_SIZE * (body.radius**init.EXPONENT), 20, 20)
             glPopMatrix()
             glutSwapBuffers()
 
@@ -227,17 +253,17 @@ class Asystem:
 
 class Definition:
     def __init__(self):             #Initialization of graphics
-        glClearColor(0.0,0.0,0.0,0.0)
+        glClearColor(0.1,0.0,0.15,0.0)
         glColor3f(1.0,1.0,1.0)
         glPointSize(POINT_SIZE)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
 
         #init lighting
-
+        '''
         mat_specular = (1.0, 1.0, 1.0, 1.0)
         mat_shininess = (50)
-        light_position = (1.0, 1.0, 0.0, 0.0)
+        light_position = (1.0, 1.0, 1.0, 0.0)
         glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular)
         glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess)
         glLightfv(GL_LIGHT0, GL_POSITION, light_position)
@@ -245,7 +271,7 @@ class Definition:
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
         glEnable(GL_DEPTH_TEST)
-
+        '''
         #global previousTime, eyeTheta, eyePhi, eyeRho, look, windowWidth, windowHeight, upY
         self.displayRatio = 1 * WIDTH / HEIGHT
         self.windowWidth = WIDTH
@@ -257,6 +283,7 @@ class Definition:
         self.upY = 1
         self.look = [0, 0, 0]
         self.SCALE = SCALE
+        self.EXPONENT = EXPONENT
         gluPerspective(VIEW_ANGLE, self.displayRatio, WORLD_NEAR, WORLD_FAR)
         glutKeyboardFunc(self.keyboard)
         glutReshapeFunc(self.reshape)
@@ -274,9 +301,9 @@ class Definition:
         elif (theKey == b'k' or theKey == b'K'):
             self.eyeTheta += math.pi / 20
         elif (theKey == b'n' or theKey == b'N'):
-            self.eyeRho += 3
+            self.eyeRho += 7
         elif (theKey == b'm' or theKey == b'M'):
-            self.eyeRho -= 3
+            self.eyeRho -= 7
         elif (theKey == b'w' or theKey == b'W'):
             self.look[1] += 0.5
         elif (theKey == b's' or theKey == b'S'):
@@ -285,10 +312,15 @@ class Definition:
             self.look[0] -= 0.5
         elif (theKey == b'd' or theKey == b'D'):
             self.look[0] += 0.5
-        elif (theKey == b'e' or theKey == b'e'):
+        elif (theKey == b'e' or theKey == b'E'):
             self.SCALE *= 1.1
-        elif (theKey == b'q' or theKey == b'q'):
-            self.SCALE *= 0.9
+        elif (theKey == b'q' or theKey == b'Q'):
+            self.SCALE *= .9
+        elif (theKey == b','):
+            self.EXPONENT *= 1.001
+        elif (theKey == b'.'):
+            self.EXPONENT *= 0.999
+
         if math.sin(self.eyePhi) > 0: self.upY = 1
         else: self.upY = 1
     def reshape(self, width, height):             #Manipulate with the window
@@ -307,19 +339,19 @@ Randomly generates planetary system
 '''
 def planet_system(n_bodies):
     system = Asystem(0)
-    system.system.append(Body(1,2452170.375,0,0,0,0,0,0,500,20))
+    system.system.append(Body(1,2452170.375,0,0,0,0,0,0,500,20,253,184,19))
     position = 20
     velocity = 1000
     for i in range(n_bodies):
-        system.system.append(Body(i,2452170.375,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(0,10),uniform(0,10)))
+        system.system.append(Body(i,2452170.375,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(0,10),uniform(0,10),random(),random(),random()))
     return system
 
 
 
 if __name__ == "__main__":
 
-    #planet_system = Asystem("Solar_system.csv")
-    planet_system = planet_system(10)
+    planet_system = Asystem("Solar_system.csv")
+    #planet_system = planet_system(10)
     glutInit(sys.argv)
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB)
     glutInitWindowSize(WIDTH, HEIGHT)
