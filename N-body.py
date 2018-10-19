@@ -239,6 +239,7 @@ class Asystem:
                   init.look[0], init.look[1], init.look[2],
                   0, init.upY, 0)
 
+        self.glut_print(10, 10, GLUT_BITMAP_9_BY_15, astrotime(self.system[0].time, format = 'jd').iso, 1.0, 1.0, 1.0, 1.0)
         for body in self.system:
             glPushMatrix()
             glTranslated(init.SCALE * body.x, init.SCALE * body.y, init.SCALE * body.z)
@@ -251,8 +252,25 @@ class Asystem:
             for point in body.coord:
                 glVertex3f(init.SCALE * point[0], init.SCALE * point[1], init.SCALE * point[2])
             glEnd()
-            glutSwapBuffers()
 
+        glutSwapBuffers()
+
+    '''
+    Display text
+    '''
+    def glut_print(self, x, y, font, text, r, g, b, a):
+        self.blending = False
+        if glIsEnabled(GL_BLEND):
+            self.blending = True
+
+        # glEnable(GL_BLEND)
+        glColor3f(r, g, b)
+        glWindowPos2f(x, y)
+        for ch in text:
+            glutBitmapCharacter(font, ctypes.c_int(ord(ch)))
+
+        if not self.blending:
+            glDisable(GL_BLEND)
 
     def animate(self):
         self.compute()
@@ -343,16 +361,17 @@ class Definition:
 
 
 
+
 '''
 Randomly generates planetary system
 '''
 def planet_system(n_bodies):
     system = Asystem(0)
     system.system.append(Body(1,2452170.375,0,0,0,0,0,0,500,20,253,184,19))
-    position = 20
-    velocity = 1000
+    position = 5
+    velocity = 1
     for i in range(n_bodies):
-        system.system.append(Body(i,2452170.375,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(0,10),uniform(0,10),random(),random(),random()))
+        system.system.append(Body(i,2452170.375,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(1,1000),uniform(0,10),random(),random(),random()))
     return system
 
 
