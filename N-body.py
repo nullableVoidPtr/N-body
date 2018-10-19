@@ -226,6 +226,9 @@ class Asystem:
 
                     if distance <= self.system[i].radius + self.system[j].radius:
                         print("Collision of " + str(self.system[i].ident) + " and " + str(self.system[j].ident) + " @ " + astrotime(self.system[i].time, format = 'jd').iso)
+                        return([True,str(self.system[i].ident),str(self.system[j].ident)])
+                    else:
+                        return([False])
     '''
     This function redraws the screen after the positions of particles have been updated
     '''
@@ -248,11 +251,12 @@ class Asystem:
             glPopMatrix()
             glLineWidth(1)
             glBegin(GL_LINE_STRIP)
-            glColor(body.color1,body.color2,body.color3)
+            glColor(body.color1/255,body.color2/255,body.color3/255)
             for point in body.coord:
                 glVertex3f(init.SCALE * point[0], init.SCALE * point[1], init.SCALE * point[2])
             glEnd()
-
+        if self.if_collision()[0] == True:
+            self.glut_print(100, 100, GLUT_BITMAP_9_BY_15, "Collision of " + self.if_collision()[1] + " and " + self.if_collision()[2], 1.0, 1.0, 1.0, 1.0)
         glutSwapBuffers()
 
     '''
@@ -328,9 +332,9 @@ class Definition:
         elif (theKey == b'k' or theKey == b'K'):
             self.eyeTheta += math.pi / 20
         elif (theKey == b'n' or theKey == b'N'):
-            self.eyeRho += 7
+            self.eyeRho *= 1.1
         elif (theKey == b'm' or theKey == b'M'):
-            self.eyeRho -= 7
+            self.eyeRho /= 1.1
         elif (theKey == b'w' or theKey == b'W'):
             self.look[1] += 0.5
         elif (theKey == b's' or theKey == b'S'):
@@ -344,9 +348,9 @@ class Definition:
         elif (theKey == b'q' or theKey == b'Q'):
             self.SCALE *= .9
         elif (theKey == b','):
-            self.EXPONENT *= 1.001
+            self.EXPONENT *= 1.01
         elif (theKey == b'.'):
-            self.EXPONENT *= 0.999
+            self.EXPONENT *= 0.99
 
         if math.sin(self.eyePhi) > 0: self.upY = 1
         else: self.upY = 1
@@ -367,11 +371,12 @@ Randomly generates planetary system
 '''
 def planet_system(n_bodies):
     system = Asystem(0)
-    system.system.append(Body(1,2452170.375,0,0,0,0,0,0,500,20,253,184,19))
+    system.system.append(Body(1,2452170.375,0,0,0,0,0,0,5000000,20,253,184,19))
     position = 5
     velocity = 1
     for i in range(n_bodies):
-        system.system.append(Body(i,2452170.375,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(1,1000),uniform(0,10),random(),random(),random()))
+        mass_radius = uniform(1,100000)
+        system.system.append(Body(i,2452170.375,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),mass_radius,mass_radius,uniform(0,255),uniform(0,255),uniform(0,255)))
     return system
 
 
