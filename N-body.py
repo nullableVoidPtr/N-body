@@ -7,9 +7,10 @@ from OpenGL.GLUT import *
 from OpenGL.GLU import *
 import configparser
 from astropy.time import Time as astrotime
+import datetime
 
 config = configparser.ConfigParser()
-config.read('configure.ini')
+config.read('configure_random.ini')
 
 WIDTH = int(config['CONFIGURE']['WIDTH'])
 HEIGHT = int(config['CONFIGURE']['HEIGHT'])
@@ -33,7 +34,7 @@ NORM_DELTA_T = float(config['CONFIGURE']['NORM_DELTA_T'])
 FINE_DELTA_T = float(config['CONFIGURE']['FINE_DELTA_T'])
 SEC_PER_DAY = float(config['CONFIGURE']['SEC_PER_DAY'])
 EXPONENT = float(config['CONFIGURE']['EXPONENT'])
-DELTA_T = NORM_DELTA_T
+bool_T = True
 
 '''
 Class holds attributes of a single body
@@ -96,6 +97,7 @@ class Body(object):
             self.color3 = color3
         self.coord = []
         self.zeroF()
+        self.collisions = ""
 
     def zeroF(self):
         self.Fx = 0
@@ -129,14 +131,14 @@ class Body(object):
         self.Fz += gd * Dz
 
     def cal_velocity(self):
-        self.Vx += self.Fx * DELTA_T / self.mass
-        self.Vy += self.Fy * DELTA_T / self.mass
-        self.Vz += self.Fz * DELTA_T / self.mass
+        self.Vx += self.Fx * planet_system.DELTA_T / self.mass
+        self.Vy += self.Fy * planet_system.DELTA_T / self.mass
+        self.Vz += self.Fz * planet_system.DELTA_T / self.mass
 
     def cal_position(self):
-        self.x += self.Vx * DELTA_T
-        self.y += self.Vy * DELTA_T
-        self.z += self.Vz * DELTA_T
+        self.x += self.Vx * planet_system.DELTA_T
+        self.y += self.Vy * planet_system.DELTA_T
+        self.z += self.Vz * planet_system.DELTA_T
         self.coord.append((self.x,self.y,self.z))
 
 
@@ -145,9 +147,8 @@ class Body(object):
 Class holds bodies
 '''
 class Asystem:
-
-
     def __init__(self,input):
+        self.DELTA_T = NORM_DELTA_T
         if type(input) == int:
             self.n_bodies = input
             self.system = []
@@ -183,26 +184,25 @@ class Asystem:
                 bodies.append(body)
         return bodies
 
-    def write_to_file(self,file_name):
-        data = 'ident,             JDTDB,                      X,                      Y,                      Z,              VX (km/s),              VY (km/s),              VZ (km/s),             mass (kg),          radius (km),  color1,   color2,    color3,\n'
+    def write_to_file(self,file):
+        data = ''
         for body in self.system:
-            body_data = (str(body.ident) + ","
-                         + str(body.time) + ","
-                         + str(body.x) + ","
-                         + str(body.y) + ","
-                         + str(body.z) + ","
-                         + str(body.Vx) + ","
-                         + str(body.Vy) + ","
-                         + str(body.Vz) + ","
-                         + str(body.mass) + ","
-                         + str(body.radius) + ","
-                         + str(body.color1) + ","
-                         + str(body.color2) + ","
+            body_data = (str(body.ident) + ", "
+                         + str(body.time) + ", "
+                         + str(body.x) + ", "
+                         + str(body.y) + ", "
+                         + str(body.z) + ", "
+                         + str(body.Vx) + ", "
+                         + str(body.Vy) + ", "
+                         + str(body.Vz) + ", "
+                         + str(body.mass) + ", "
+                         + str(body.radius) + ", "
+                         + str(body.color1) + ", "
+                         + str(body.color2) + ", "
                          + str(body.color3) + "\n")
             data += body_data
-        file = open(file_name,'w')
+        data += "Collisions: " + self.collisions + '\n\n'
         file.write(data)
-        file.close()
 
     def compute(self):
         for body in self.system:
@@ -213,22 +213,39 @@ class Asystem:
             body.cal_velocity()
         for body in self.system:
             body.cal_position()
-            body.time += DELTA_T / SEC_PER_DAY
+            body.time += self.DELTA_T / SEC_PER_DAY
 
     def if_collision(self):
+        self.collisions = ""
+        if_T = False
         for i in range(len(self.system)):
-            for j in range(len(self.system)-i):
-                if i != j:
+            for j in range(len(self.system)):
+                if i > j:
                     x_dif = self.system[i].x - self.system[j].x
                     y_dif = self.system[i].y - self.system[j].y
                     z_dif = self.system[i].z - self.system[j].z
                     distance = (x_dif**2 + y_dif**2 + z_dif**2)**0.5
-
+                    if distance <= 2*(self.system[i].radius + self.system[j].radius):
+                        if_T = True
                     if distance <= self.system[i].radius + self.system[j].radius:
-                        print("Collision of " + str(self.system[i].ident) + " and " + str(self.system[j].ident) + " @ " + astrotime(self.system[i].time, format = 'jd').iso)
-                        return([True,str(self.system[i].ident),str(self.system[j].ident)])
-                    else:
-                        return([False])
+                        self.collisions += str(self.system[i].ident) + " and " + str(self.system[j].ident) + ", "
+        if self.collisions != "":
+            string = self.collisions[:-2]
+            print("Collision: " + string +  " @ " + astrotime(self.system[i].time, format = 'jd').iso)
+            self.glut_print(10, 25, GLUT_BITMAP_9_BY_15, "Collision: " + string, 1.0, 1.0, 1.0, 1.0)
+        else:
+            self.collisions = "None"
+            self.glut_print(10, 25, GLUT_BITMAP_9_BY_15, "Collision: " + self.collisions, 1.0, 1.0, 1.0, 1.0)
+        if bool_T == False:
+            planet_system.DELTA_T = 0
+        elif if_T == True:
+            self.DELTA_T = FINE_DELTA_T
+            self.write_to_file(write_file)
+        else:
+            self.DELTA_T = NORM_DELTA_T
+
+
+
     '''
     This function redraws the screen after the positions of particles have been updated
     '''
@@ -255,8 +272,8 @@ class Asystem:
             for point in body.coord:
                 glVertex3f(init.SCALE * point[0], init.SCALE * point[1], init.SCALE * point[2])
             glEnd()
-        if self.if_collision()[0] == True:
-            self.glut_print(100, 100, GLUT_BITMAP_9_BY_15, "Collision of " + self.if_collision()[1] + " and " + self.if_collision()[2], 1.0, 1.0, 1.0, 1.0)
+        self.if_collision()
+
         glutSwapBuffers()
 
     '''
@@ -279,7 +296,6 @@ class Asystem:
     def animate(self):
         self.compute()
         self.display()
-        self.if_collision()
 
 
 class Definition:
@@ -315,6 +331,7 @@ class Definition:
         self.look = [0, 0, 0]
         self.SCALE = SCALE
         self.EXPONENT = EXPONENT
+        self.bool_T = True
         gluPerspective(VIEW_ANGLE, self.displayRatio, WORLD_NEAR, WORLD_FAR)
         glutKeyboardFunc(self.keyboard)
         glutReshapeFunc(self.reshape)
@@ -351,6 +368,9 @@ class Definition:
             self.EXPONENT *= 1.01
         elif (theKey == b'.'):
             self.EXPONENT *= 0.99
+        elif (theKey == b' '):
+            global bool_T
+            bool_T = not bool_T
 
         if math.sin(self.eyePhi) > 0: self.upY = 1
         else: self.upY = 1
@@ -371,20 +391,22 @@ Randomly generates planetary system
 '''
 def planet_system(n_bodies):
     system = Asystem(0)
-    system.system.append(Body(1,2452170.375,0,0,0,0,0,0,5000000,20,253,184,19))
-    position = 5
+    system.system.append(Body(0,2452170.375,0,0,0,0,0,0,100000000000000000000,10,253,184,19))
+    position = 50
     velocity = 1
     for i in range(n_bodies):
-        mass_radius = uniform(1,100000)
-        system.system.append(Body(i,2452170.375,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),mass_radius,mass_radius,uniform(0,255),uniform(0,255),uniform(0,255)))
+        if i != 0:
+            mass_radius = uniform(1,1000)
+            system.system.append(Body(i,2452170.375,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),mass_radius,mass_radius/1000,uniform(0,255),uniform(0,255),uniform(0,255)))
     return system
 
 
 
 if __name__ == "__main__":
-
-    planet_system = Asystem("Solar_system.csv")
-    #planet_system = planet_system(10)
+    write_file = open(str(datetime.datetime.now()) + ".csv", 'w')
+    write_file.write('ident,             JDTDB,                      X,                      Y,                      Z,              VX (km/s),              VY (km/s),              VZ (km/s),             mass (kg),          radius (km),  color1,   color2,    color3,\n')
+    #planet_system = Asystem("Solar_system.csv")
+    planet_system = planet_system(10)
     glutInit(sys.argv)
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB)
     glutInitWindowSize(WIDTH, HEIGHT)
@@ -397,3 +419,5 @@ if __name__ == "__main__":
     init = Definition()
 
     glutMainLoop()
+
+    write_file.close()
