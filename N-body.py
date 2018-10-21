@@ -287,6 +287,7 @@ class Asystem:
             glEnd()
         self.if_collision()
 
+
         glutSwapBuffers()
 
     '''
