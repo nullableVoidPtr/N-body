@@ -8,9 +8,10 @@ from OpenGL.GLU import *
 import configparser
 from astropy.time import Time as astrotime
 import datetime
+import threading
 
 config = configparser.ConfigParser()
-config.read('configure_random.ini')
+config.read('configure.ini')
 
 WIDTH = int(config['CONFIGURE']['WIDTH'])
 HEIGHT = int(config['CONFIGURE']['HEIGHT'])
@@ -204,7 +205,19 @@ class Asystem:
         data += "Collisions: " + self.collisions + '\n\n'
         file.write(data)
 
-    def compute(self):
+    def compute1(self,body):
+
+        body.zeroF()
+        for other_body in self.system:
+            if body != other_body:
+                body.cal_netforce(other_body)
+        body.cal_velocity()
+
+    def compute2(self,body):
+        body.cal_position()
+        body.time += self.DELTA_T / SEC_PER_DAY
+
+        '''
         for body in self.system:
             body.zeroF()
             for other_body in self.system:
@@ -214,7 +227,7 @@ class Asystem:
         for body in self.system:
             body.cal_position()
             body.time += self.DELTA_T / SEC_PER_DAY
-
+        '''
     def if_collision(self):
         self.collisions = ""
         if_T = False
@@ -294,7 +307,19 @@ class Asystem:
             glDisable(GL_BLEND)
 
     def animate(self):
-        self.compute()
+
+        calc1 = []
+        for body in self.system:
+            calc1.append(threading.Thread(target=self.compute1, args=(body,)))
+            calc1[-1].start()
+        for i in calc1:
+            i.join()
+        calc2 = []
+        for body in self.system:
+            calc2.append(threading.Thread(target=self.compute2, args=(body,)))
+            calc2[-1].start()
+        for i in calc2:
+            i.join()
         self.display()
 
 
@@ -371,9 +396,10 @@ class Definition:
         elif (theKey == b' '):
             global bool_T
             bool_T = not bool_T
-
+        '''
         if math.sin(self.eyePhi) > 0: self.upY = 1
         else: self.upY = 1
+        '''
     def reshape(self, width, height):             #Manipulate with the window
         self.displayRatio = 1 * width / height
         self.windowWidth = width
@@ -392,7 +418,7 @@ Randomly generates planetary system
 def planet_system(n_bodies):
     system = Asystem(0)
     system.system.append(Body(0,2452170.375,0,0,0,0,0,0,100000000000000000000,10,253,184,19))
-    position = 50
+    position = 5
     velocity = 1
     for i in range(n_bodies):
         if i != 0:
@@ -405,8 +431,8 @@ def planet_system(n_bodies):
 if __name__ == "__main__":
     write_file = open(str(datetime.datetime.now()) + ".csv", 'w')
     write_file.write('ident,             JDTDB,                      X,                      Y,                      Z,              VX (km/s),              VY (km/s),              VZ (km/s),             mass (kg),          radius (km),  color1,   color2,    color3,\n')
-    #planet_system = Asystem("Solar_system.csv")
-    planet_system = planet_system(10)
+    planet_system = Asystem("Solar_system.csv")
+    #planet_system = planet_system(10)
     glutInit(sys.argv)
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB)
     glutInitWindowSize(WIDTH, HEIGHT)
