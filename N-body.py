@@ -35,7 +35,12 @@ NORM_DELTA_T = float(config['CONFIGURE']['NORM_DELTA_T'])
 FINE_DELTA_T = float(config['CONFIGURE']['FINE_DELTA_T'])
 SEC_PER_DAY = float(config['CONFIGURE']['SEC_PER_DAY'])
 EXPONENT = float(config['CONFIGURE']['EXPONENT'])
+ORBIT_LENGTH = int(config['CONFIGURE']['ORBIT_LENGTH'])
+SAVE_RATE = int(config['CONFIGURE']['SAVE_RATE'])
 bool_T = True
+orbit = True
+display = True
+short_orbit = True
 
 '''
 Class holds attributes of a single body
@@ -159,7 +164,7 @@ class Asystem:
             self.system = self.read_from_file(input)
         else:
             raise Exception("Invalid input type for init of Asystem")
-
+        self.count = 0
     def print(self):
         for body in self.system:
             body.print()
@@ -228,6 +233,7 @@ class Asystem:
             body.cal_position()
             body.time += self.DELTA_T / SEC_PER_DAY
         '''
+
     def if_collision(self):
         self.collisions = ""
         if_T = False
@@ -238,17 +244,15 @@ class Asystem:
                     y_dif = self.system[i].y - self.system[j].y
                     z_dif = self.system[i].z - self.system[j].z
                     distance = (x_dif**2 + y_dif**2 + z_dif**2)**0.5
-                    if distance <= 2*(self.system[i].radius + self.system[j].radius):
+                    if distance <= 30*(self.system[i].radius + self.system[j].radius):
                         if_T = True
                     if distance <= self.system[i].radius + self.system[j].radius:
                         self.collisions += str(self.system[i].ident) + " and " + str(self.system[j].ident) + ", "
         if self.collisions != "":
             string = self.collisions[:-2]
-            print("Collision: " + string +  " @ " + astrotime(self.system[i].time, format = 'jd').iso)
             self.glut_print(10, 25, GLUT_BITMAP_9_BY_15, "Collision: " + string, 1.0, 1.0, 1.0, 1.0)
         else:
-            self.collisions = "None"
-            self.glut_print(10, 25, GLUT_BITMAP_9_BY_15, "Collision: " + self.collisions, 1.0, 1.0, 1.0, 1.0)
+            self.glut_print(10, 25, GLUT_BITMAP_9_BY_15, "Collision: None", 1.0, 1.0, 1.0, 1.0)
         if bool_T == False:
             planet_system.DELTA_T = 0
         elif if_T == True:
@@ -257,12 +261,11 @@ class Asystem:
         else:
             self.DELTA_T = NORM_DELTA_T
 
-
-
     '''
     This function redraws the screen after the positions of particles have been updated
     '''
     def display(self):
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
@@ -273,19 +276,26 @@ class Asystem:
                   0, init.upY, 0)
 
         self.glut_print(10, 10, GLUT_BITMAP_9_BY_15, astrotime(self.system[0].time, format = 'jd').iso, 1.0, 1.0, 1.0, 1.0)
-        for body in self.system:
-            glPushMatrix()
-            glTranslated(init.SCALE * body.x, init.SCALE * body.y, init.SCALE * body.z)
-            glColor3f(body.color1/255, body.color2/255, body.color3/255)
-            glutSolidSphere(BALL_SIZE * (body.radius**init.EXPONENT), 20, 20)
-            glPopMatrix()
-            glLineWidth(1)
-            glBegin(GL_LINE_STRIP)
-            glColor(body.color1/255,body.color2/255,body.color3/255)
-            for point in body.coord:
-                glVertex3f(init.SCALE * point[0], init.SCALE * point[1], init.SCALE * point[2])
-            glEnd()
         self.if_collision()
+        if display:
+            for body in self.system:
+                glPushMatrix()
+                glTranslated(init.SCALE * body.x, init.SCALE * body.y, init.SCALE * body.z)
+                glColor3f(body.color1/255, body.color2/255, body.color3/255)
+                glutSolidSphere(BALL_SIZE * (body.radius**init.EXPONENT), 20, 20)
+                glPopMatrix()
+                glLineWidth(1)
+                glColor(body.color1/255,body.color2/255,body.color3/255)
+                if orbit == True:
+                    glBegin(GL_LINE_STRIP)
+                    dis_coord = body.coord
+                    if short_orbit:
+
+                        if len(dis_coord)>ORBIT_LENGTH:
+                            dis_coord = dis_coord[(-1)*ORBIT_LENGTH:]
+                    for point in dis_coord:
+                        glVertex3f(init.SCALE * point[0], init.SCALE * point[1], init.SCALE * point[2])
+                    glEnd()
 
 
         glutSwapBuffers()
@@ -308,7 +318,8 @@ class Asystem:
             glDisable(GL_BLEND)
 
     def animate(self):
-
+        if self.count % SAVE_RATE == 0:
+            self.write_to_file(write_file)
         calc1 = []
         for body in self.system:
             calc1.append(threading.Thread(target=self.compute1, args=(body,)))
@@ -322,6 +333,7 @@ class Asystem:
         for i in calc2:
             i.join()
         self.display()
+        self.count+=1
 
 
 class Definition:
@@ -357,7 +369,6 @@ class Definition:
         self.look = [0, 0, 0]
         self.SCALE = SCALE
         self.EXPONENT = EXPONENT
-        self.bool_T = True
         gluPerspective(VIEW_ANGLE, self.displayRatio, WORLD_NEAR, WORLD_FAR)
         glutKeyboardFunc(self.keyboard)
         glutReshapeFunc(self.reshape)
@@ -397,6 +408,23 @@ class Definition:
         elif (theKey == b' '):
             global bool_T
             bool_T = not bool_T
+        elif (theKey == b'1'):
+            global orbit
+            orbit = not orbit
+        elif (theKey == b'2'):
+            global display
+            display = not display
+        elif (theKey == b'3'):
+            global short_orbit
+            short_orbit = not short_orbit
+        elif (theKey == b'='):
+            global ORBIT_LENGTH
+            ORBIT_LENGTH+=10
+        elif (theKey == b'-'):
+            global ORBIT_LENGTH
+            ORBIT_LENGTH-=10
+            if ORBIT_LENGTH <= 0:
+                ORBIT_LENGTH+=10
         '''
         if math.sin(self.eyePhi) > 0: self.upY = 1
         else: self.upY = 1
@@ -423,8 +451,8 @@ def planet_system(n_bodies):
     velocity = 1
     for i in range(n_bodies):
         if i != 0:
-            mass_radius = uniform(1,1000)
-            system.system.append(Body(i,2452170.375,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),mass_radius,mass_radius/1000,uniform(0,255),uniform(0,255),uniform(0,255)))
+            mass_radius = uniform(1,1000000000000)
+            system.system.append(Body(i,2452170.375,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),mass_radius,mass_radius/1000000000000,uniform(0,255),uniform(0,255),uniform(0,255)))
     return system
 
 
@@ -440,7 +468,8 @@ if __name__ == "__main__":
     glutInitWindowPosition(POSITION_X, POSITION_Y)
     glutCreateWindow("N-Body")
 
-    glutDisplayFunc(planet_system.display)
+    if display:
+        glutDisplayFunc(planet_system.display)
     glutIdleFunc(planet_system.animate)
 
     init = Definition()
