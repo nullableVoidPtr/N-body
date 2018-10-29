@@ -11,7 +11,7 @@ import datetime
 import threading
 
 config = configparser.ConfigParser()
-config.read('configure.ini')
+config.read('configure_random.ini')
 
 WIDTH = int(config['CONFIGURE']['WIDTH'])
 HEIGHT = int(config['CONFIGURE']['HEIGHT'])
@@ -296,7 +296,7 @@ class Asystem:
                     for point in dis_coord:
                         glVertex3f(init.SCALE * point[0], init.SCALE * point[1], init.SCALE * point[2])
                     glEnd()
-
+                self.glut_print3(init.SCALE * body.x, init.SCALE * body.y, init.SCALE * body.z, GLUT_BITMAP_9_BY_15, body.ident, 1.0, 1.0, 1.0, 1.0)
 
         glutSwapBuffers()
 
@@ -311,7 +311,21 @@ class Asystem:
         # glEnable(GL_BLEND)
         glColor3f(r, g, b)
         glWindowPos2f(x, y)
-        for ch in text:
+        for ch in str(text):
+            glutBitmapCharacter(font, ctypes.c_int(ord(ch)))
+
+        if not self.blending:
+            glDisable(GL_BLEND)
+
+    def glut_print3(self, x, y, z, font, text, r, g, b, a):
+        self.blending = False
+        if glIsEnabled(GL_BLEND):
+            self.blending = True
+
+        # glEnable(GL_BLEND)
+        glColor3f(r, g, b)
+        glRasterPos3f(x, y, z)
+        for ch in str(text):
             glutBitmapCharacter(font, ctypes.c_int(ord(ch)))
 
         if not self.blending:
@@ -352,7 +366,6 @@ class Definition:
         glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular)
         glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess)
         glLightfv(GL_LIGHT0, GL_POSITION, light_position)
-
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
         glEnable(GL_DEPTH_TEST)
@@ -425,6 +438,13 @@ class Definition:
             ORBIT_LENGTH-=10
             if ORBIT_LENGTH <= 0:
                 ORBIT_LENGTH+=10
+        elif (theKey == b'['):
+            global NORM_DELTA_T
+            NORM_DELTA_T/=1.1
+        elif (theKey == b']'):
+            global NORM_DELTA_T
+            NORM_DELTA_T*=1.1
+
         '''
         if math.sin(self.eyePhi) > 0: self.upY = 1
         else: self.upY = 1
@@ -460,8 +480,8 @@ def planet_system(n_bodies):
 if __name__ == "__main__":
     write_file = open(str(datetime.datetime.now()) + ".csv", 'w')
     write_file.write('ident,             JDTDB,                      X,                      Y,                      Z,              VX (km/s),              VY (km/s),              VZ (km/s),             mass (kg),          radius (km),  color1,   color2,    color3,\n')
-    planet_system = Asystem("Solar_system.csv")
-    #planet_system = planet_system(10)
+    #planet_system = Asystem("Solar_system.csv")
+    planet_system = planet_system(10)
     glutInit(sys.argv)
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB)
     glutInitWindowSize(WIDTH, HEIGHT)
