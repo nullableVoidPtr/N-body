@@ -9,9 +9,11 @@ import configparser
 from astropy.time import Time as astrotime
 import datetime
 import threading
+from PIL import Image as Image
+import numpy
 
 config = configparser.ConfigParser()
-config.read('configure_random.ini')
+config.read('configure.ini')
 
 WIDTH = int(config['CONFIGURE']['WIDTH'])
 HEIGHT = int(config['CONFIGURE']['HEIGHT'])
@@ -37,6 +39,7 @@ SEC_PER_DAY = float(config['CONFIGURE']['SEC_PER_DAY'])
 EXPONENT = float(config['CONFIGURE']['EXPONENT'])
 ORBIT_LENGTH = int(config['CONFIGURE']['ORBIT_LENGTH'])
 SAVE_RATE = int(config['CONFIGURE']['SAVE_RATE'])
+TEXTURE_FILE = str(config['CONFIGURE']['TEXTURE_FILE'])
 bool_T = True
 orbit = True
 display = True
@@ -47,7 +50,7 @@ Class holds attributes of a single body
 '''
 class Body(object):
     global_ident = 0
-    def __init__(self, ident=None, time=None, x=None, y=None,z=None,Vx=None,Vy=None,Vz=None,mass=None,radius=None,color1=None,color2=None,color3=None):
+    def __init__(self, ident=None, time=None, x=None, y=None,z=None,Vx=None,Vy=None,Vz=None,mass=None,radius=None,color1=None,color2=None,color3=None,texture=None):
         if ident == None:
             self.ident = Body.global_ident
             Body.global_ident += 1
@@ -94,16 +97,22 @@ class Body(object):
         else:
             self.color1 = color1
         if color2 == None:
-            self.color2 = random()
+             self.color2 = random()
         else:
             self.color2 = color2
         if color3 == None:
             self.color3 = random()
         else:
             self.color3 = color3
+        if texture == None:
+            self.texture=0
+        else:
+            self.texture = texture
         self.coord = []
         self.zeroF()
         self.collisions = ""
+
+
 
     def zeroF(self):
         self.Fx = 0
@@ -147,8 +156,41 @@ class Body(object):
         self.z += self.Vz * planet_system.DELTA_T
         self.coord.append((self.x,self.y,self.z))
 
+    def display(self):
+        if self.texture != 0:
+            ''''''
 
-
+            qobj = gluNewQuadric()
+            gluQuadricTexture(qobj, GL_TRUE)
+            #gluQuadricDrawStyle(qobj, GLU_FILL)
+            #gluQuadricNormals(qobj, GLU_SMOOTH)
+            #tex = self.read_texture('planet_test.jpg')
+            glBindTexture(GL_TEXTURE_2D, planet_system.texture_names[self.texture-1])
+            glEnable(GL_TEXTURE_2D)
+            gluSphere(qobj, BALL_SIZE * (self.radius**init.EXPONENT), 50, 50)
+            gluDeleteQuadric(qobj)
+            glDisable(GL_TEXTURE_2D)
+            '''
+            glEnable(GL_TEXTURE_2D)
+            glBindTexture(GL_TEXTURE_2D, planet_system.texture_names[self.texture-1])
+            glEnable(GL_TEXTURE_GEN_S)
+            glEnable(GL_TEXTURE_GEN_T)
+            glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP)
+            glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP)
+            glutSolidSphere(BALL_SIZE * (self.radius**init.EXPONENT), 50, 50)
+            glDisable(GL_TEXTURE_2D)
+            '''
+        else:
+            '''
+            glColor3f(self.color1/255, self.color2/255, self.color3/255)
+            glutSolidSphere(BALL_SIZE * (body.radius**init.EXPONENT), 20, 20)
+            glPopMatrix()
+            glLineWidth(1)
+            glColor(self.color1/255,self.color2/255,self.color3/255)
+            '''
+            color = [self.color1/255, self.color2/255, self.color3/255]
+            glMaterialfv(GL_FRONT, GL_DIFFUSE, color)
+            glutSolidSphere(BALL_SIZE * (self.radius**init.EXPONENT), 20, 20)
 '''
 Class holds bodies
 '''
@@ -165,6 +207,7 @@ class Asystem:
         else:
             raise Exception("Invalid input type for init of Asystem")
         self.count = 0
+        self.texture_names = self.create_textures()
     def print(self):
         for body in self.system:
             body.print()
@@ -186,7 +229,8 @@ class Asystem:
                             float(fields[9]),
                             float(fields[10]),
                             float(fields[11]),
-                            float(fields[12]))
+                            float(fields[12]),
+                            int(fields[13]))
                 bodies.append(body)
         return bodies
 
@@ -205,7 +249,8 @@ class Asystem:
                          + str(body.radius) + ", "
                          + str(body.color1) + ", "
                          + str(body.color2) + ", "
-                         + str(body.color3) + "\n")
+                         + str(body.color3) + ", "
+                         + str(body.texture) + "\n")
             data += body_data
         data += "Collisions: " + self.collisions + '\n\n'
         file.write(data)
@@ -221,18 +266,6 @@ class Asystem:
     def compute2(self,body):
         body.cal_position()
         body.time += self.DELTA_T / SEC_PER_DAY
-
-        '''
-        for body in self.system:
-            body.zeroF()
-            for other_body in self.system:
-                if body != other_body:
-                    body.cal_netforce(other_body)
-            body.cal_velocity()
-        for body in self.system:
-            body.cal_position()
-            body.time += self.DELTA_T / SEC_PER_DAY
-        '''
 
     def if_collision(self):
         self.collisions = ""
@@ -261,6 +294,36 @@ class Asystem:
         else:
             self.DELTA_T = NORM_DELTA_T
 
+    def create_textures(self):
+
+        filename = []
+        file=open(TEXTURE_FILE,'r')
+        try:
+            for line in file:
+                newline = line.split('\n')
+                filename.append(newline[0])
+        except:
+            print("%s not found" %TEXTURE_FILE)
+
+        textID = glGenTextures(len(filename))
+
+
+
+        for i in range(len(filename)):
+            img = Image.open(filename[i])
+            img_data = numpy.array(list(img.getdata()), numpy.int8)
+            glBindTexture(GL_TEXTURE_2D, textID[i])
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+            glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img.size[0], img.size[1], 0,
+                 GL_RGBA, GL_UNSIGNED_BYTE, img_data)
+        return(textID)
     '''
     This function redraws the screen after the positions of particles have been updated
     '''
@@ -274,6 +337,8 @@ class Asystem:
                   init.eyeRho * math.sin(init.eyePhi) * math.cos(init.eyeTheta),
                   init.look[0], init.look[1], init.look[2],
                   0, init.upY, 0)
+        light_sun_position = [planet_system.system[0].x,planet_system.system[0].y,planet_system.system[0].z]
+        glLightfv(GL_LIGHT0, GL_POSITION, light_sun_position)
 
         self.glut_print(10, 10, GLUT_BITMAP_9_BY_15, astrotime(self.system[0].time, format = 'jd').iso, 1.0, 1.0, 1.0, 1.0)
         self.if_collision()
@@ -281,11 +346,12 @@ class Asystem:
             for body in self.system:
                 glPushMatrix()
                 glTranslated(init.SCALE * body.x, init.SCALE * body.y, init.SCALE * body.z)
-                glColor3f(body.color1/255, body.color2/255, body.color3/255)
-                glutSolidSphere(BALL_SIZE * (body.radius**init.EXPONENT), 20, 20)
+                body.display()
                 glPopMatrix()
+
+                glDisable(GL_LIGHTING)
                 glLineWidth(1)
-                glColor(body.color1/255,body.color2/255,body.color3/255)
+                glColor3f(body.color1/255, body.color2/255, body.color3/255)
                 if orbit == True:
                     glBegin(GL_LINE_STRIP)
                     dis_coord = body.coord
@@ -296,7 +362,8 @@ class Asystem:
                     for point in dis_coord:
                         glVertex3f(init.SCALE * point[0], init.SCALE * point[1], init.SCALE * point[2])
                     glEnd()
-                self.glut_print3(init.SCALE * body.x, init.SCALE * body.y, init.SCALE * body.z, GLUT_BITMAP_9_BY_15, body.ident, 1.0, 1.0, 1.0, 1.0)
+                self.glut_print3(init.SCALE * body.x, init.SCALE * body.y, init.SCALE * body.z, GLUT_BITMAP_9_BY_15, body.ident, body.color1/255, body.color2/255, body.color3/255, 1.0)
+                glEnable(GL_LIGHTING)
 
         glutSwapBuffers()
 
@@ -332,8 +399,10 @@ class Asystem:
             glDisable(GL_BLEND)
 
     def animate(self):
+
         if self.count % SAVE_RATE == 0:
             self.write_to_file(write_file)
+
         calc1 = []
         for body in self.system:
             calc1.append(threading.Thread(target=self.compute1, args=(body,)))
@@ -351,25 +420,31 @@ class Asystem:
 
 
 class Definition:
-    def __init__(self):             #Initialization of graphics
+    def __init__(self):             #InitialiglEnable(GL_CULL_FACE)zation of graphics
         glClearColor(0.1,0.0,0.15,0.0)
-        glColor3f(1.0,1.0,1.0)
         glPointSize(POINT_SIZE)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
+        glShadeModel(GL_SMOOTH)
 
-        #init lighting
-        '''
+        glEnable(GL_CULL_FACE)
+        glEnable(GL_LIGHTING)
+        glEnable(GL_DEPTH_TEST)
+
         mat_specular = (1.0, 1.0, 1.0, 1.0)
         mat_shininess = (50)
         light_position = (1.0, 1.0, 1.0, 0.0)
-        glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular)
-        glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess)
-        glLightfv(GL_LIGHT0, GL_POSITION, light_position)
-        glEnable(GL_LIGHTING)
+        lightZeroPosition = [10., 4., 10., 1.]
+        light_sun_position = [planet_system.system[0].x,planet_system.system[0].y,planet_system.system[0].z]
+        #glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular)
+        #glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess)
+        lightZeroColor = [1.0, 1.0, 1.0, 1.0]
+        glLightfv(GL_LIGHT0, GL_POSITION, light_sun_position)
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, lightZeroColor)
+        glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.1)
+        glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.05)
         glEnable(GL_LIGHT0)
-        glEnable(GL_DEPTH_TEST)
-        '''
+
         #global previousTime, eyeTheta, eyePhi, eyeRho, look, windowWidth, windowHeight, upY
         self.displayRatio = 1 * WIDTH / HEIGHT
         self.windowWidth = WIDTH
@@ -386,6 +461,7 @@ class Definition:
         glutKeyboardFunc(self.keyboard)
         glutReshapeFunc(self.reshape)
     def keyboard(self, theKey, mouseX, mouseY): #Manipulate with the image
+
         if (theKey == b'x' or theKey == b'X'):
             sys.exit()
         if (theKey == b'i' or theKey == b'I'):
@@ -460,7 +536,6 @@ class Definition:
 
 
 
-
 '''
 Randomly generates planetary system
 '''
@@ -480,10 +555,10 @@ def planet_system(n_bodies):
 if __name__ == "__main__":
     write_file = open(str(datetime.datetime.now()) + ".csv", 'w')
     write_file.write('ident,             JDTDB,                      X,                      Y,                      Z,              VX (km/s),              VY (km/s),              VZ (km/s),             mass (kg),          radius (km),  color1,   color2,    color3,\n')
-    #planet_system = Asystem("Solar_system.csv")
-    planet_system = planet_system(10)
+    planet_system = Asystem("Solar_system.csv")
+    #planet_system = planet_system(10)
     glutInit(sys.argv)
-    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB)
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH)
     glutInitWindowSize(WIDTH, HEIGHT)
     glutInitWindowPosition(POSITION_X, POSITION_Y)
     glutCreateWindow("N-Body")
