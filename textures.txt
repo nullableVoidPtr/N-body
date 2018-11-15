@@ -6,3 +6,4 @@ jupiter.jpg
 saturn.jpg
 uranus.jpg
 neptune.jpg
+sun.jpg

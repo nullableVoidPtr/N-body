@@ -15,6 +15,13 @@ import numpy
 config = configparser.ConfigParser()
 config.read('configure.ini')
 
+global bool_T
+global orbit
+global display
+global ORBIT_LENGTH
+global short_orbit
+global NORM_DELTA_T
+
 WIDTH = int(config['CONFIGURE']['WIDTH'])
 HEIGHT = int(config['CONFIGURE']['HEIGHT'])
 POINT_SIZE = float(config['CONFIGURE']['POINT_SIZE'])
@@ -44,6 +51,7 @@ bool_T = True
 orbit = True
 display = True
 short_orbit = True
+
 
 '''
 Class holds attributes of a single body
@@ -162,9 +170,9 @@ class Body(object):
 
             qobj = gluNewQuadric()
             gluQuadricTexture(qobj, GL_TRUE)
-            #gluQuadricDrawStyle(qobj, GLU_FILL)
-            #gluQuadricNormals(qobj, GLU_SMOOTH)
-            #tex = self.read_texture('planet_test.jpg')
+            gluQuadricDrawStyle(qobj, GLU_FILL)
+            gluQuadricNormals(qobj, GLU_SMOOTH)
+            #gluQuadricOrientation()
             glBindTexture(GL_TEXTURE_2D, planet_system.texture_names[self.texture-1])
             glEnable(GL_TEXTURE_2D)
             gluSphere(qobj, BALL_SIZE * (self.radius**init.EXPONENT), 50, 50)
@@ -179,9 +187,9 @@ class Body(object):
             glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP)
             glutSolidSphere(BALL_SIZE * (self.radius**init.EXPONENT), 50, 50)
             glDisable(GL_TEXTURE_2D)
-            '''
+            ''''''
         else:
-            '''
+            ''''''
             glColor3f(self.color1/255, self.color2/255, self.color3/255)
             glutSolidSphere(BALL_SIZE * (body.radius**init.EXPONENT), 20, 20)
             glPopMatrix()
@@ -295,7 +303,6 @@ class Asystem:
             self.DELTA_T = NORM_DELTA_T
 
     def create_textures(self):
-
         filename = []
         file=open(TEXTURE_FILE,'r')
         try:
@@ -304,26 +311,25 @@ class Asystem:
                 filename.append(newline[0])
         except:
             print("%s not found" %TEXTURE_FILE)
-
-        textID = glGenTextures(len(filename))
-
-
-
-        for i in range(len(filename)):
-            img = Image.open(filename[i])
-            img_data = numpy.array(list(img.getdata()), numpy.int8)
-            glBindTexture(GL_TEXTURE_2D, textID[i])
-            glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-            glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img.size[0], img.size[1], 0,
-                 GL_RGBA, GL_UNSIGNED_BYTE, img_data)
-        return(textID)
+        if len(filename)>0:
+            textID = []
+            for i in range(len(filename)):
+                textID.append(glGenTextures(1))
+            for i in range(len(filename)):
+                img = Image.open(filename[i])
+                img_data = numpy.array(list(img.getdata()), numpy.int8)
+                glBindTexture(GL_TEXTURE_2D, textID[i])
+                glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+                glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img.size[0], img.size[1], 0,
+                     GL_RGB, GL_UNSIGNED_BYTE, img_data)
+            return(textID)
     '''
     This function redraws the screen after the positions of particles have been updated
     '''
@@ -346,6 +352,9 @@ class Asystem:
             for body in self.system:
                 glPushMatrix()
                 glTranslated(init.SCALE * body.x, init.SCALE * body.y, init.SCALE * body.z)
+                #glRotatef((-1)*init.eyeRho * math.sin(init.eyePhi) * math.sin(init.eyeTheta), 1, 0, 0)
+                #glRotatef((-1)*init.eyeRho * math.cos(init.eyePhi), 0, 1, 0)
+                #glRotatef((-1)*init.eyeRho * math.sin(init.eyePhi) * math.sin(init.eyeTheta), 0, 0, 1)
                 body.display()
                 glPopMatrix()
 
@@ -375,7 +384,7 @@ class Asystem:
         if glIsEnabled(GL_BLEND):
             self.blending = True
 
-        # glEnable(GL_BLEND)
+        glEnable(GL_BLEND)
         glColor3f(r, g, b)
         glWindowPos2f(x, y)
         for ch in str(text):
@@ -389,7 +398,7 @@ class Asystem:
         if glIsEnabled(GL_BLEND):
             self.blending = True
 
-        # glEnable(GL_BLEND)
+        glEnable(GL_BLEND)
         glColor3f(r, g, b)
         glRasterPos3f(x, y, z)
         for ch in str(text):
@@ -436,8 +445,8 @@ class Definition:
         light_position = (1.0, 1.0, 1.0, 0.0)
         lightZeroPosition = [10., 4., 10., 1.]
         light_sun_position = [planet_system.system[0].x,planet_system.system[0].y,planet_system.system[0].z]
-        #glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular)
-        #glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess)
+        glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular)
+        glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess)
         lightZeroColor = [1.0, 1.0, 1.0, 1.0]
         glLightfv(GL_LIGHT0, GL_POSITION, light_sun_position)
         glLightfv(GL_LIGHT0, GL_DIFFUSE, lightZeroColor)
@@ -510,7 +519,6 @@ class Definition:
             global ORBIT_LENGTH
             ORBIT_LENGTH+=10
         elif (theKey == b'-'):
-            global ORBIT_LENGTH
             ORBIT_LENGTH-=10
             if ORBIT_LENGTH <= 0:
                 ORBIT_LENGTH+=10
@@ -518,7 +526,6 @@ class Definition:
             global NORM_DELTA_T
             NORM_DELTA_T/=1.1
         elif (theKey == b']'):
-            global NORM_DELTA_T
             NORM_DELTA_T*=1.1
 
         '''
@@ -541,13 +548,13 @@ Randomly generates planetary system
 '''
 def planet_system(n_bodies):
     system = Asystem(0)
-    system.system.append(Body(0,2452170.375,0,0,0,0,0,0,100000000000000000000,10,253,184,19))
+    system.system.append(Body(0,2452170.375,0,0,0,0,0,0,100000000000000000000,10,253,184,19, 0))
     position = 5
     velocity = 1
     for i in range(n_bodies):
         if i != 0:
             mass_radius = uniform(1,1000000000000)
-            system.system.append(Body(i,2452170.375,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),mass_radius,mass_radius/1000000000000,uniform(0,255),uniform(0,255),uniform(0,255)))
+            system.system.append(Body(i,2452170.375,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),mass_radius,mass_radius/1000000000000,uniform(0,255),uniform(0,255),uniform(0,255),0))
     return system
 
 
@@ -555,13 +562,17 @@ def planet_system(n_bodies):
 if __name__ == "__main__":
     write_file = open(str(datetime.datetime.now()) + ".csv", 'w')
     write_file.write('ident,             JDTDB,                      X,                      Y,                      Z,              VX (km/s),              VY (km/s),              VZ (km/s),             mass (kg),          radius (km),  color1,   color2,    color3,\n')
-    planet_system = Asystem("Solar_system.csv")
-    #planet_system = planet_system(10)
+
     glutInit(sys.argv)
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH)
     glutInitWindowSize(WIDTH, HEIGHT)
     glutInitWindowPosition(POSITION_X, POSITION_Y)
     glutCreateWindow("N-Body")
+
+
+    glGenTextures(1)
+    #planet_system = planet_system(1)
+    planet_system = Asystem("Solar_system.csv")
 
     if display:
         glutDisplayFunc(planet_system.display)
