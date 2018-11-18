@@ -15,12 +15,6 @@ import numpy
 config = configparser.ConfigParser()
 config.read('configure.ini')
 
-global bool_T
-global orbit
-global display
-global ORBIT_LENGTH
-global short_orbit
-global NORM_DELTA_T
 
 WIDTH = int(config['CONFIGURE']['WIDTH'])
 HEIGHT = int(config['CONFIGURE']['HEIGHT'])
@@ -47,10 +41,7 @@ EXPONENT = float(config['CONFIGURE']['EXPONENT'])
 ORBIT_LENGTH = int(config['CONFIGURE']['ORBIT_LENGTH'])
 SAVE_RATE = int(config['CONFIGURE']['SAVE_RATE'])
 TEXTURE_FILE = str(config['CONFIGURE']['TEXTURE_FILE'])
-bool_T = True
-orbit = True
-display = True
-short_orbit = True
+
 
 
 '''
@@ -120,8 +111,6 @@ class Body(object):
         self.zeroF()
         self.collisions = ""
 
-
-
     def zeroF(self):
         self.Fx = 0
         self.Fy = 0
@@ -175,7 +164,7 @@ class Body(object):
             #gluQuadricOrientation()
             glBindTexture(GL_TEXTURE_2D, planet_system.texture_names[self.texture-1])
             glEnable(GL_TEXTURE_2D)
-            gluSphere(qobj, BALL_SIZE * (self.radius**init.EXPONENT), 50, 50)
+            gluSphere(qobj, init.BALL_SIZE * (self.radius**init.EXPONENT), 50, 50)
             gluDeleteQuadric(qobj)
             glDisable(GL_TEXTURE_2D)
             '''
@@ -216,6 +205,7 @@ class Asystem:
             raise Exception("Invalid input type for init of Asystem")
         self.count = 0
         self.texture_names = self.create_textures()
+        self.closeness = []
     def print(self):
         for body in self.system:
             body.print()
@@ -260,7 +250,13 @@ class Asystem:
                          + str(body.color3) + ", "
                          + str(body.texture) + "\n")
             data += body_data
-        data += "Collisions: " + self.collisions + '\n\n'
+        data += "Collisions: " + self.collisions + '\n'
+        close_list = ""
+        for i in self.closeness:
+            close_list+= i + ", "
+        if close_list != []:
+            close_list = close_list[:-2]
+        data += "Closeness: " + close_list + '\n\n'
         file.write(data)
 
     def compute1(self,body):
@@ -294,13 +290,13 @@ class Asystem:
             self.glut_print(10, 25, GLUT_BITMAP_9_BY_15, "Collision: " + string, 1.0, 1.0, 1.0, 1.0)
         else:
             self.glut_print(10, 25, GLUT_BITMAP_9_BY_15, "Collision: None", 1.0, 1.0, 1.0, 1.0)
-        if bool_T == False:
+        if init.bool_T == False:
             planet_system.DELTA_T = 0
         elif if_T == True:
             self.DELTA_T = FINE_DELTA_T
             self.write_to_file(write_file)
         else:
-            self.DELTA_T = NORM_DELTA_T
+            self.DELTA_T = init.NORM_DELTA_T
 
     def create_textures(self):
         filename = []
@@ -348,7 +344,7 @@ class Asystem:
 
         self.glut_print(10, 10, GLUT_BITMAP_9_BY_15, astrotime(self.system[0].time, format = 'jd').iso, 1.0, 1.0, 1.0, 1.0)
         self.if_collision()
-        if display:
+        if init.display:
             for body in self.system:
                 glPushMatrix()
                 glTranslated(init.SCALE * body.x, init.SCALE * body.y, init.SCALE * body.z)
@@ -361,10 +357,10 @@ class Asystem:
                 glDisable(GL_LIGHTING)
                 glLineWidth(1)
                 glColor3f(body.color1/255, body.color2/255, body.color3/255)
-                if orbit == True:
+                if init.orbit == True:
                     glBegin(GL_LINE_STRIP)
                     dis_coord = body.coord
-                    if short_orbit:
+                    if init.short_orbit:
 
                         if len(dis_coord)>ORBIT_LENGTH:
                             dis_coord = dis_coord[(-1)*ORBIT_LENGTH:]
@@ -407,11 +403,28 @@ class Asystem:
         if not self.blending:
             glDisable(GL_BLEND)
 
+    def close_calc(self,body1,body2):
+        distances = []
+        global bool
+        bool = False
+        if len(body1.coord)>2:
+            for i in range(0,4):
+                if i != 0:
+                    x_dif = body1.coord[-i][0] - body2.coord[-i][0]
+                    y_dif = body1.coord[-i][1] - body2.coord[-i][1]
+                    z_dif = body1.coord[-i][2] - body2.coord[-i][2]
+                    distances.append((x_dif ** 2 + y_dif ** 2 + z_dif ** 2) ** 0.5)
+            if distances[0] > distances[1] and distances[1] < distances[2]:
+                self.closeness.append(body1.ident + " and " + body2.ident + "; " + str(distances[1]))
+                bool=True
+        return bool
+
     def animate(self):
-
-        if self.count % SAVE_RATE == 0:
+        self.closeness = []
+        if self.close_calc(self.system[11], self.system[3]):
             self.write_to_file(write_file)
-
+        elif self.count % SAVE_RATE == 0:
+            self.write_to_file(write_file)
         calc1 = []
         for body in self.system:
             calc1.append(threading.Thread(target=self.compute1, args=(body,)))
@@ -424,8 +437,10 @@ class Asystem:
             calc2[-1].start()
         for i in calc2:
             i.join()
+
         self.display()
         self.count+=1
+
 
 
 class Definition:
@@ -466,11 +481,22 @@ class Definition:
         self.look = [0, 0, 0]
         self.SCALE = SCALE
         self.EXPONENT = EXPONENT
+        self.button = None
+        self.state = None
+        self.bool_T = True
+        self.orbit = True
+        self.display = True
+        self.ORBIT_LENGTH = ORBIT_LENGTH
+        self.short_orbit = True
+        self.NORM_DELTA_T = NORM_DELTA_T
+        self.BALL_SIZE = BALL_SIZE
         gluPerspective(VIEW_ANGLE, self.displayRatio, WORLD_NEAR, WORLD_FAR)
         glutKeyboardFunc(self.keyboard)
+        glutMouseFunc(self.mouse)
+        glutMotionFunc(self.motion)
         glutReshapeFunc(self.reshape)
-    def keyboard(self, theKey, mouseX, mouseY): #Manipulate with the image
 
+    def keyboard(self, theKey, mouseX, mouseY): #Manipulate with the image
         if (theKey == b'x' or theKey == b'X'):
             sys.exit()
         if (theKey == b'i' or theKey == b'I'):
@@ -488,13 +514,13 @@ class Definition:
         elif (theKey == b'm' or theKey == b'M'):
             self.eyeRho /= 1.1
         elif (theKey == b'w' or theKey == b'W'):
-            self.look[1] += 0.5
+            self.look[1] += 0.01 * self.SCALE * self.eyeRho
         elif (theKey == b's' or theKey == b'S'):
-            self.look[1] -= 0.5
+            self.look[1] -= 0.01 * self.SCALE * self.eyeRho
         elif (theKey == b'a' or theKey == b'A'):
-            self.look[0] -= 0.5
+            self.look[0] -= 0.01 * self.SCALE * self.eyeRho
         elif (theKey == b'd' or theKey == b'D'):
-            self.look[0] += 0.5
+            self.look[0] += 0.01 * self.SCALE * self.eyeRho
         elif (theKey == b'e' or theKey == b'E'):
             self.SCALE *= 1.1
         elif (theKey == b'q' or theKey == b'Q'):
@@ -503,35 +529,87 @@ class Definition:
             self.EXPONENT *= 1.01
         elif (theKey == b'.'):
             self.EXPONENT *= 0.99
-        elif (theKey == b' '):
-            global bool_T
-            bool_T = not bool_T
-        elif (theKey == b'1'):
-            global orbit
-            orbit = not orbit
-        elif (theKey == b'2'):
-            global display
-            display = not display
-        elif (theKey == b'3'):
-            global short_orbit
-            short_orbit = not short_orbit
-        elif (theKey == b'='):
-            global ORBIT_LENGTH
-            ORBIT_LENGTH+=10
-        elif (theKey == b'-'):
-            ORBIT_LENGTH-=10
-            if ORBIT_LENGTH <= 0:
-                ORBIT_LENGTH+=10
-        elif (theKey == b'['):
-            global NORM_DELTA_T
-            NORM_DELTA_T/=1.1
-        elif (theKey == b']'):
-            NORM_DELTA_T*=1.1
 
         '''
-        if math.sin(self.eyePhi) > 0: self.upY = 1
-        else: self.upY = 1
+        elif (theKey == b'c' or theKey == b'C'):
+            try:
+                x_change = mouseX - self.prevMouseX
+            except:
+                x_change = 0
+            try:
+                y_change = mouseY - self.prevMouseY
+            except:
+                y_change = 0
+            self.eyePhi -= y_change / 300
+            self.eyeTheta -= x_change / 300
+        elif (theKey == b'v' or theKey == b'V'):
+            try:
+                x_change = mouseX - self.prevMouseX
+            except:
+                x_change = 0
+            try:
+                y_change = mouseY - self.prevMouseY
+            except:
+                y_change = 0
+            self.look[1] += 0.0002 * y_change * self.SCALE * self.eyeRho
+            self.look[0] -= 0.0002 * x_change * self.SCALE * self.eyeRho
         '''
+        if (theKey == b' '):
+            self.bool_T = not self.bool_T
+        elif (theKey == b'1'):
+            self.orbit = not self.orbit
+        elif (theKey == b'2'):
+            self.display = not self.display
+        elif (theKey == b'3'):
+            self.short_orbit = not self.short_orbit
+        elif (theKey == b'='):
+            self.ORBIT_LENGTH+=10
+        elif (theKey == b'-'):
+            self.ORBIT_LENGTH-=10
+            if self.ORBIT_LENGTH <= 0:
+                self.ORBIT_LENGTH+=10
+        elif (theKey == b'['):
+            self.NORM_DELTA_T/=1.1
+        elif (theKey == b']'):
+            self.NORM_DELTA_T*=1.1
+        elif (theKey == b'r'):
+            self.BALL_SIZE/=1.1
+        elif (theKey == b't'):
+            self.BALL_SIZE*=1.1
+        self.prevMouseX = mouseX
+        self.prevMouseY = mouseY
+
+        if math.sin(self.eyePhi) > 0: self.upY = 1
+        else: self.upY = -1
+
+    def mouse(self, button, state, mouseX, mouseY):
+        self.button = button
+        self.state = state
+        self.prevMouseX = mouseX
+        self.prevMouseY = mouseY
+
+    def motion(self,mouseX,mouseY):
+        try:
+            x_change = mouseX - self.prevMouseX
+        except:
+            x_change = 0
+        try:
+            y_change = mouseY - self.prevMouseY
+        except:
+            y_change = 0
+        if self.button == GLUT_LEFT_BUTTON and self.state == GLUT_DOWN:
+            self.eyePhi -= y_change / 300
+            self.eyeTheta -= x_change / 300
+        elif self.button == GLUT_RIGHT_BUTTON and self.state == GLUT_DOWN:
+            self.look[1] += 0.0002 * y_change * self.SCALE * self.eyeRho
+            self.look[0] -= 0.0002 * x_change * self.SCALE * self.eyeRho
+        if (self.button == GLUT_LEFT_BUTTON and self.state == GLUT_UP) or (self.button == GLUT_RIGHT_BUTTON and self.state == GLUT_UP):
+            self.prevMouseX = None
+            self.prevMouseY = None
+        else:
+            self.prevMouseX = mouseX
+            self.prevMouseY = mouseY
+
     def reshape(self, width, height):             #Manipulate with the window
         self.displayRatio = 1 * width / height
         self.windowWidth = width
@@ -574,11 +652,11 @@ if __name__ == "__main__":
     #planet_system = planet_system(1)
     planet_system = Asystem("Solar_system.csv")
 
-    if display:
+    init = Definition()
+
+    if init.display:
         glutDisplayFunc(planet_system.display)
     glutIdleFunc(planet_system.animate)
-
-    init = Definition()
 
     glutMainLoop()
 
