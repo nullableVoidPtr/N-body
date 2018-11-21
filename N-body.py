@@ -440,7 +440,9 @@ class Asystem:
 
         self.display()
         self.count+=1
-
+        if self.system[0].time > 2458303.500000000:
+            self.write_to_file(write_file)
+            sys.exit()
 
 
 class Definition:
@@ -649,8 +651,8 @@ if __name__ == "__main__":
 
 
     glGenTextures(1)
-    #planet_system = planet_system(1)
-    planet_system = Asystem("Solar_system.csv")
+    #planet_system = planet_system(10)
+    planet_system = Asystem("solar_system_2000.csv")
 
     init = Definition()
 
