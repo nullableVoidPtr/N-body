@@ -402,7 +402,10 @@ class Asystem:
 
         if not self.blending:
             glDisable(GL_BLEND)
-
+    '''
+    Calculates when bodies reach a closest proximity
+    If the distance is smaller than the distance of the previous and next time step, its recorded
+    '''
     def close_calc(self,body1,body2):
         distances = []
         global bool
@@ -529,31 +532,6 @@ class Definition:
             self.EXPONENT *= 1.01
         elif (theKey == b'.'):
             self.EXPONENT *= 0.99
-
-        '''
-        elif (theKey == b'c' or theKey == b'C'):
-            try:
-                x_change = mouseX - self.prevMouseX
-            except:
-                x_change = 0
-            try:
-                y_change = mouseY - self.prevMouseY
-            except:
-                y_change = 0
-            self.eyePhi -= y_change / 300
-            self.eyeTheta -= x_change / 300
-        elif (theKey == b'v' or theKey == b'V'):
-            try:
-                x_change = mouseX - self.prevMouseX
-            except:
-                x_change = 0
-            try:
-                y_change = mouseY - self.prevMouseY
-            except:
-                y_change = 0
-            self.look[1] += 0.0002 * y_change * self.SCALE * self.eyeRho
-            self.look[0] -= 0.0002 * x_change * self.SCALE * self.eyeRho
-        '''
         if (theKey == b' '):
             self.bool_T = not self.bool_T
         elif (theKey == b'1'):
@@ -649,8 +627,8 @@ if __name__ == "__main__":
 
 
     glGenTextures(1)
-    #planet_system = planet_system(1)
-    planet_system = Asystem("Solar_system.csv")
+    #planet_system = planet_system(10)
+    planet_system = Asystem("solar_system.csv")
 
     init = Definition()
 
