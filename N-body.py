@@ -176,9 +176,9 @@ class Body(object):
             glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP)
             glutSolidSphere(BALL_SIZE * (self.radius**init.EXPONENT), 50, 50)
             glDisable(GL_TEXTURE_2D)
-            ''''''
+            '''
         else:
-            ''''''
+            '''
             glColor3f(self.color1/255, self.color2/255, self.color3/255)
             glutSolidSphere(BALL_SIZE * (body.radius**init.EXPONENT), 20, 20)
             glPopMatrix()
@@ -424,9 +424,9 @@ class Asystem:
 
     def animate(self):
         self.closeness = []
-        if self.close_calc(self.system[11], self.system[3]):
-            self.write_to_file(write_file)
-        elif self.count % SAVE_RATE == 0:
+        #if self.close_calc(self.system[11], self.system[3]):
+        #    self.write_to_file(write_file)
+        if self.count % SAVE_RATE == 0:
             self.write_to_file(write_file)
         calc1 = []
         for body in self.system:
@@ -466,10 +466,10 @@ class Definition:
         glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular)
         glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess)
         lightZeroColor = [1.0, 1.0, 1.0, 1.0]
-        glLightfv(GL_LIGHT0, GL_POSITION, light_sun_position)
-        glLightfv(GL_LIGHT0, GL_DIFFUSE, lightZeroColor)
-        glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.1)
-        glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.05)
+        #glLightfv(GL_LIGHT0, GL_POSITION, light_sun_position)
+        #glLightfv(GL_LIGHT0, GL_DIFFUSE, lightZeroColor)
+        #glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.1)
+        #glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.05)
         glEnable(GL_LIGHT0)
 
         #global previousTime, eyeTheta, eyePhi, eyeRho, look, windowWidth, windowHeight, upY
@@ -604,12 +604,12 @@ Randomly generates planetary system
 '''
 def planet_system(n_bodies):
     system = Asystem(0)
-    system.system.append(Body(0,2452170.375,0,0,0,0,0,0,100000000000000000000,10,253,184,19, 0))
+    system.system.append(Body(0,2452170.375,0,0,0,0,0,0,100000000000000000000,3,253,184,19, 0))
     position = 5
     velocity = 1
     for i in range(n_bodies):
         if i != 0:
-            mass_radius = uniform(1,1000000000000)
+            mass_radius = uniform(1,2000000000000)
             system.system.append(Body(i,2452170.375,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),mass_radius,mass_radius/1000000000000,uniform(0,255),uniform(0,255),uniform(0,255),0))
     return system
 
@@ -628,7 +628,7 @@ if __name__ == "__main__":
 
     glGenTextures(1)
     #planet_system = planet_system(10)
-    planet_system = Asystem("solar_system.csv")
+    planet_system = Asystem("Solar_system.csv")
 
     init = Definition()
 
