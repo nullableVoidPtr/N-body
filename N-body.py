@@ -13,7 +13,7 @@ from PIL import Image as Image
 import numpy
 
 config = configparser.ConfigParser()
-config.read('configure.ini')
+config.read('configure_random.ini')
 
 
 WIDTH = int(config['CONFIGURE']['WIDTH'])
@@ -206,6 +206,7 @@ class Asystem:
         self.count = 0
         self.texture_names = self.create_textures()
         self.closeness = []
+        self.collisions = ""
     def print(self):
         for body in self.system:
             body.print()
@@ -272,7 +273,6 @@ class Asystem:
         body.time += self.DELTA_T / SEC_PER_DAY
 
     def if_collision(self):
-        self.collisions = ""
         if_T = False
         for i in range(len(self.system)):
             for j in range(len(self.system)):
@@ -300,38 +300,77 @@ class Asystem:
 
     def create_textures(self):
         filename = []
-        file=open(TEXTURE_FILE,'r')
-        try:
-            for line in file:
-                newline = line.split('\n')
-                filename.append(newline[0])
-        except:
-            print("%s not found" %TEXTURE_FILE)
-        if len(filename)>0:
-            textID = []
-            for i in range(len(filename)):
-                textID.append(glGenTextures(1))
-            for i in range(len(filename)):
-                img = Image.open(filename[i])
-                img_data = numpy.array(list(img.getdata()), numpy.int8)
-                glBindTexture(GL_TEXTURE_2D, textID[i])
-                glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-                glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img.size[0], img.size[1], 0,
-                     GL_RGB, GL_UNSIGNED_BYTE, img_data)
-            return(textID)
+        if random == False:
+            file=open(TEXTURE_FILE,'r')
+            try:
+                for line in file:
+                    newline = line.split('\n')
+                    filename.append(newline[0])
+            except:
+                print("%s not found" %TEXTURE_FILE)
+            if len(filename)>0:
+                textID = []
+                for i in range(len(filename)):
+                    textID.append(glGenTextures(1))
+                for i in range(len(filename)):
+                    img = Image.open(filename[i])
+                    img_data = numpy.array(list(img.getdata()), numpy.int8)
+                    glBindTexture(GL_TEXTURE_2D, textID[i])
+                    glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+                    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+                    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+                    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+                    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+                    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+                    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+                    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img.size[0], img.size[1], 0,
+                         GL_RGB, GL_UNSIGNED_BYTE, img_data)
+                return(textID)
     '''
     This function redraws the screen after the positions of particles have been updated
     '''
     def display(self):
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glDisable(GL_DEPTH_TEST)
+        '''
+        qobj = gluNewQuadric()
+        gluQuadricTexture(qobj, GL_TRUE)
+        gluQuadricDrawStyle(qobj, GLU_FILL)
+        gluQuadricNormals(qobj, GLU_SMOOTH)
+        # gluQuadricOrientation()
+        glBindTexture(GL_TEXTURE_2D, 'milky_way.jpg')
+        glEnable(GL_TEXTURE_2D)
+        #
+        gluDeleteQuadric(qobj)
+        glDisable(GL_TEXTURE_2D)
+        '''
+        glBindTexture(GL_TEXTURE_2D, self.texture_names[10-1])
+        glEnable(GL_TEXTURE_2D)
+        glPushMatrix()
+        glBegin(GL_QUADS)
+        glTexCoord2d(0.0, 0.0)
+        glVertex2d(-1.0, -1.0)
+        glTexCoord2d(1.0, 0.0)
+        glVertex2d(+1.0, -1.0)
+        glTexCoord2d(1.0, 1.0)
+        glVertex2d(+1.0, +1.0)
+        glTexCoord2d(0.0, 1.0)
+        glVertex2d(-1.0, +1.0)
+        glEnd()
+        glPopMatrix()
+        glClear(GL_DEPTH_BUFFER_BIT)
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        gluPerspective(CAMERA_FOVY,
+                      WIDTH / HEIGHT,
+                       WORLD_NEAR, WORLD_FAR)
+
+
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         gluLookAt(init.eyeRho * math.sin(init.eyePhi) * math.sin(init.eyeTheta),
@@ -420,11 +459,12 @@ class Asystem:
         return bool
 
     def animate(self):
-        self.closeness = []
-        if self.close_calc(self.system[11], self.system[3]):
-            self.write_to_file(write_file)
-        elif self.count % SAVE_RATE == 0:
-            self.write_to_file(write_file)
+        if random == False:
+            self.closeness = []
+            if self.close_calc(self.system[11], self.system[3]):
+                self.write_to_file(write_file)
+            elif self.count % SAVE_RATE == 0:
+                self.write_to_file(write_file)
         calc1 = []
         for body in self.system:
             calc1.append(threading.Thread(target=self.compute1, args=(body,)))
@@ -440,9 +480,11 @@ class Asystem:
 
         self.display()
         self.count+=1
+        '''
         if self.system[0].time > 2458303.500000000:
             self.write_to_file(write_file)
             sys.exit()
+        '''
 
 
 class Definition:
@@ -603,8 +645,8 @@ class Definition:
             self.eyePhi -= y_change / 300
             self.eyeTheta -= x_change / 300
         elif self.button == GLUT_RIGHT_BUTTON and self.state == GLUT_DOWN:
-            self.look[1] += 0.0002 * y_change * self.SCALE * self.eyeRho
-            self.look[0] -= 0.0002 * x_change * self.SCALE * self.eyeRho
+            self.look[1] += 0.0004 * y_change * self.SCALE * self.eyeRho
+            self.look[0] -= 0.0004 * x_change * self.SCALE * self.eyeRho
         if (self.button == GLUT_LEFT_BUTTON and self.state == GLUT_UP) or (self.button == GLUT_RIGHT_BUTTON and self.state == GLUT_UP):
             self.prevMouseX = None
             self.prevMouseY = None
@@ -628,13 +670,32 @@ Randomly generates planetary system
 '''
 def planet_system(n_bodies):
     system = Asystem(0)
-    system.system.append(Body(0,2452170.375,0,0,0,0,0,0,100000000000000000000,10,253,184,19, 0))
+
+    #sun
+    mass = uniform(1000000, 3000000) * 1E24
+    density = uniform(1000, 3000) * 1E9
+    volume = mass / density
+    radius = (3 * volume / (4 * math.pi)) ** (1 / 3)
+    system.system.append(Body(0, 2452170.375, 0, 0, 0, 0, 0, 0, mass, radius, 253, 184, 19, 0))
+
+    #second sun
+    if uniform(1,100)<20:
+        mass = uniform(1000000, 3000000) * 1E24
+        density = uniform(1000, 3000) * 1E9
+        volume = mass / density
+        radius = (3 * volume / (4 * math.pi)) ** (1 / 3)
+        system.system.append(Body(0, 2452170.375, 0, 0, 0, 0, 0, 0, mass, radius, 21, 244, 238, 0))
+
+    #bodies
     position = 5
     velocity = 1
     for i in range(n_bodies):
         if i != 0:
-            mass_radius = uniform(1,1000000000000)
-            system.system.append(Body(i,2452170.375,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),mass_radius,mass_radius/1000000000000,uniform(0,255),uniform(0,255),uniform(0,255),0))
+            mass = uniform(0.01,2000)*1E24
+            density = uniform(500,6000)*1E9
+            volume = mass/density
+            radius = (3*volume/(4*math.pi))**(1/3)
+            system.system.append(Body(i,2452170.375,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),mass,radius,uniform(0,255),uniform(0,255),uniform(0,255),0))
     return system
 
 
@@ -651,9 +712,9 @@ if __name__ == "__main__":
 
 
     glGenTextures(1)
-    #planet_system = planet_system(10)
-    planet_system = Asystem("solar_system_2000.csv")
-
+    planet_system = planet_system(15)
+    #planet_system = Asystem("solar_system_2000.csv")
+    random = False
     init = Definition()
 
     if init.display:
