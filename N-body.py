@@ -49,64 +49,25 @@ Class holds attributes of a single body
 '''
 class Body(object):
     global_ident = 0
-    def __init__(self, ident=None, time=None, x=None, y=None,z=None,Vx=None,Vy=None,Vz=None,mass=None,radius=None,color1=None,color2=None,color3=None,texture=None):
+    def __init__(self, ident=None, time=2452170.375, x=None, y=None,z=None,Vx=None,Vy=None,Vz=None,mass=None,radius=None,color1=None,color2=None,color3=None,texture=None):
         if ident == None:
             self.ident = Body.global_ident
             Body.global_ident += 1
         else:
             self.ident = ident
-        if time == None:
-            self.x = 2452170.375 #2001-09-17T21:00:00.000
-        else:
-            self.time = time
-        if x == None:
-            self.x = random()
-        else:
-            self.x = x
-        if y == None:
-            self.y = random()
-        else:
-            self.y = y
-        if z == None:
-            self.z = random()
-        else:
-            self.z = z
-        if Vx == None:
-            self.Vx = random()
-        else:
-            self.Vx = Vx
-        if Vy == None:
-            self.Vy = random()
-        else:
-            self.Vy = Vy
-        if Vz == None:
-            self.Vz = random()
-        else:
-            self.Vz = Vz
-        if mass == None:
-            self.mass = random()
-        else:
-            self.mass = mass
-        if radius == None:
-            self.radius = random()
-        else:
-            self.radius = radius
-        if color1 == None:
-            self.color1 = random()
-        else:
-            self.color1 = color1
-        if color2 == None:
-             self.color2 = random()
-        else:
-            self.color2 = color2
-        if color3 == None:
-            self.color3 = random()
-        else:
-            self.color3 = color3
-        if texture == None:
-            self.texture=0
-        else:
-            self.texture = texture
+        self.time = time
+        self.x = x or random()
+        self.y = y or random()
+        self.z = z or random()
+        self.Vx = Vx or random()
+        self.Vy = Vy or random()
+        self.Vz = Vz or random()
+        self.mass = mass or random()
+        self.radius = radius or random()
+        self.color1 = color1 or random()
+        self.color2 = color2 or random()
+        self.color3 = color3 or random()
+        self.texture = 0 or texture
         self.coord = []
         self.zeroF()
         self.collisions = ""
@@ -116,20 +77,21 @@ class Body(object):
         self.Fy = 0
         self.Fz = 0
 
-    def print(self):
-        print("ident = " + str(self.ident)
-              + ", time =  " + str(self.time) + " = " + str(astrotime(self.time, format = "jd", scale = 'utc').isot)
-              + ", x = " + str(self.x)
-              + ", y = " + str(self.y)
-              + ", z = " + str(self.z)
-              + ", Vx = " + str(self.Vx)
-              + ", Vy = " + str(self.Vy)
-              + ", Vz = " + str(self.Vz)
-              + ", mass = " + str(self.mass)
-              + ", radius = " + str(self.radius)
-              + ", color1 = " + str(self.color1)
-              + ", color2 = " + str(self.color2)
-              + ", color3 = " + str(self.color3))
+    def __str__(self):
+        return (
+            f"ident = {self.ident}, "
+            f"time = {self.time} = {astrotime(self.time, format = 'jd', scale = 'utc').isot}, "
+            f"x = {self.x}, "
+            f"y = {self.y}, "
+            f"z = {self.z}, "
+            f"Vx = {self.Vx}, "
+            f"Vy = {self.Vy}, "
+            f"Vz = {self.Vz}, "
+            f"mass = {self.mass}, "
+            f"radius = {self.radius}, "
+            f"color1 = {self.color1}, "
+            f"color2 = {self.color2}, "
+            f"color3 = {self.color3}")
 
     def cal_netforce(self, other_body):
         Dx = other_body.x - self.x
@@ -206,9 +168,8 @@ class Asystem:
         self.count = 0
         self.texture_names = self.create_textures()
         self.closeness = []
-    def print(self):
-        for body in self.system:
-            body.print()
+    def __str__(self):
+        return "\n".join([str(body) for body in self.system])
 
     def read_from_file(self,file_name):
         bodies = []
@@ -235,27 +196,25 @@ class Asystem:
     def write_to_file(self,file):
         data = ''
         for body in self.system:
-            body_data = (str(body.ident) + ", "
-                         + str(body.time) + ", "
-                         + str(body.x) + ", "
-                         + str(body.y) + ", "
-                         + str(body.z) + ", "
-                         + str(body.Vx) + ", "
-                         + str(body.Vy) + ", "
-                         + str(body.Vz) + ", "
-                         + str(body.mass) + ", "
-                         + str(body.radius) + ", "
-                         + str(body.color1) + ", "
-                         + str(body.color2) + ", "
-                         + str(body.color3) + ", "
-                         + str(body.texture) + "\n")
+            body_data = (
+            f"{body.ident}, "
+            f"{body.time}, "
+            f"{body.x}, "
+            f"{body.y}, "
+            f"{body.z}, "
+            f"{body.Vx}, "
+            f"{body.Vy}, "
+            f"{body.Vz}, "
+            f"{body.mass}, "
+            f"{body.radius}, "
+            f"{body.color1}, "
+            f"{body.color2}, "
+            f"{body.color3}, "
+            f"{body.texture}\n"
+            )
             data += body_data
-        data += "Collisions: " + self.collisions + '\n'
-        close_list = ""
-        for i in self.closeness:
-            close_list+= i + ", "
-        if close_list != []:
-            close_list = close_list[:-2]
+        data += f"Collisions: {self.collisions}\n"
+        close_list = ", ".join(self.closeness)
         data += "Closeness: " + close_list + '\n\n'
         file.write(data)
 
@@ -284,7 +243,7 @@ class Asystem:
                     if distance <= 30*(self.system[i].radius + self.system[j].radius):
                         if_T = True
                     if distance <= self.system[i].radius + self.system[j].radius:
-                        self.collisions += str(self.system[i].ident) + " and " + str(self.system[j].ident) + ", "
+                        self.collisions += f"{self.system[i].ident} and {self.system[j].ident}, "
         if self.collisions != "":
             string = self.collisions[:-2]
             self.glut_print(10, 25, GLUT_BITMAP_9_BY_15, "Collision: " + string, 1.0, 1.0, 1.0, 1.0)
@@ -302,30 +261,27 @@ class Asystem:
         filename = []
         file=open(TEXTURE_FILE,'r')
         try:
-            for line in file:
-                newline = line.split('\n')
-                filename.append(newline[0])
+            filename = file.read().splitlines()
         except:
             print("%s not found" %TEXTURE_FILE)
-        if len(filename)>0:
-            textID = []
-            for i in range(len(filename)):
-                textID.append(glGenTextures(1))
-            for i in range(len(filename)):
-                img = Image.open(filename[i])
-                img_data = numpy.array(list(img.getdata()), numpy.int8)
-                glBindTexture(GL_TEXTURE_2D, textID[i])
-                glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-                glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-                glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img.size[0], img.size[1], 0,
-                     GL_RGB, GL_UNSIGNED_BYTE, img_data)
-            return(textID)
+        textures = []
+        for file in filename:
+            textID = glGenTextures(1)
+            img = Image.open(file)
+            img_data = numpy.array(list(img.getdata()), numpy.int8)
+            glBindTexture(GL_TEXTURE_2D, textID)
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+            glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img.size[0], img.size[1], 0,
+                 GL_RGB, GL_UNSIGNED_BYTE, img_data)
+            textures.append(textID)
+        return textures
     '''
     This function redraws the screen after the positions of particles have been updated
     '''
@@ -408,19 +364,16 @@ class Asystem:
     '''
     def close_calc(self,body1,body2):
         distances = []
-        global bool
-        bool = False
         if len(body1.coord)>2:
-            for i in range(0,4):
-                if i != 0:
-                    x_dif = body1.coord[-i][0] - body2.coord[-i][0]
-                    y_dif = body1.coord[-i][1] - body2.coord[-i][1]
-                    z_dif = body1.coord[-i][2] - body2.coord[-i][2]
-                    distances.append((x_dif ** 2 + y_dif ** 2 + z_dif ** 2) ** 0.5)
+            for i in range(1,4):
+                x_dif = body1.coord[-i][0] - body2.coord[-i][0]
+                y_dif = body1.coord[-i][1] - body2.coord[-i][1]
+                z_dif = body1.coord[-i][2] - body2.coord[-i][2]
+                distances.append((x_dif ** 2 + y_dif ** 2 + z_dif ** 2) ** 0.5)
             if distances[0] > distances[1] and distances[1] < distances[2]:
                 self.closeness.append(body1.ident + " and " + body2.ident + "; " + str(distances[1]))
-                bool=True
-        return bool
+                return True
+        return False
 
     def animate(self):
         self.closeness = []
@@ -616,7 +569,7 @@ def planet_system(n_bodies):
 
 
 if __name__ == "__main__":
-    write_file = open(str(datetime.datetime.now()) + ".csv", 'w')
+    write_file = open(f"{datetime.datetime.now().strftime('%Y%m%dT%H%M%SZ (validity)')}.csv", 'w')
     write_file.write('ident,             JDTDB,                      X,                      Y,                      Z,              VX (km/s),              VY (km/s),              VZ (km/s),             mass (kg),          radius (km),  color1,   color2,    color3,\n')
 
     glutInit(sys.argv)
