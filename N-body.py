@@ -49,7 +49,7 @@ Class holds attributes of a single body
 '''
 class Body(object):
     global_ident = 0
-    def __init__(self, ident=None, time=2452170.375, x=None, y=None,z=None,Vx=None,Vy=None,Vz=None,mass=None,radius=None,color1=None,color2=None,color3=None,texture_file=None):
+    def __init__(self, ident=None, time=2452170.375, x=None, y=None,z=None,Vx=None,Vy=None,Vz=None,mass=None,radius=None,color=None,texture_file=None):
         if ident == None:
             self.ident = Body.global_ident
             Body.global_ident += 1
@@ -64,9 +64,7 @@ class Body(object):
         self.Vz = Vz or random()
         self.mass = mass or random()
         self.radius = radius or random()
-        self.color1 = color1 or random()
-        self.color2 = color2 or random()
-        self.color3 = color3 or random()
+        self.parse_color(color)
         self.texture = None
         self.load_texture(texture_file)
         self.coord = []
@@ -90,9 +88,7 @@ class Body(object):
             f"Vz = {self.Vz}, "
             f"mass = {self.mass}, "
             f"radius = {self.radius}, "
-            f"color1 = {self.color1}, "
-            f"color2 = {self.color2}, "
-            f"color3 = {self.color3}")
+            f"color = {'%02X%02X%02X' % self.color}")
 
     def cal_netforce(self, other_body):
         Dx = other_body.x - self.x
@@ -115,6 +111,12 @@ class Body(object):
         self.y += self.Vy * planet_system.DELTA_T
         self.z += self.Vz * planet_system.DELTA_T
         self.coord.append((self.x,self.y,self.z))
+
+    def parse_color(self, color):
+        if not color:
+            self.color = (random(), random(), random())
+        else:
+            self.color = tuple(int(color[i:i+2], 16) for i in (0, 2, 4))
 
     def load_texture(self, filename):
         if not filename:
@@ -151,7 +153,7 @@ class Body(object):
             glDisable(GL_TEXTURE_2D)
             '''
             glEnable(GL_TEXTURE_2D)
-            glBindTexture(GL_TEXTURE_2D, planet_system.texture_names[self.texture-1])
+            glBindTexture(GL_TEXTURE_2D, self.texture)
             glEnable(GL_TEXTURE_GEN_S)
             glEnable(GL_TEXTURE_GEN_T)
             glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP)
@@ -161,13 +163,13 @@ class Body(object):
             '''
         else:
             '''
-            glColor3f(self.color1/255, self.color2/255, self.color3/255)
+            glColor3f(self.color[0]/255, self.color[1]/255, self.color[2]/255)
             glutSolidSphere(BALL_SIZE * (body.radius**init.EXPONENT), 20, 20)
             glPopMatrix()
             glLineWidth(1)
-            glColor(self.color1/255,self.color2/255,self.color3/255)
+            glColor(self.color[0]/255, self.color[1]/255, self.color[2]/255)
             '''
-            color = [self.color1/255, self.color2/255, self.color3/255]
+            color = [self.color[0]/255, self.color[1]/255, self.color[2]/255]
             glMaterialfv(GL_FRONT, GL_DIFFUSE, color)
             glutSolidSphere(BALL_SIZE * (self.radius**init.EXPONENT), 20, 20)
 '''
@@ -205,10 +207,8 @@ class Asystem:
                             float(fields[7]),
                             float(fields[8]),
                             float(fields[9]),
-                            float(fields[10]),
-                            float(fields[11]),
-                            float(fields[12]),
-                            str(fields[13]).strip())
+                            str(fields[10]).strip(),
+                            str(fields[11]).strip())
                 bodies.append(body)
         return bodies
 
@@ -226,9 +226,7 @@ class Asystem:
             f"{body.Vz}, "
             f"{body.mass}, "
             f"{body.radius}, "
-            f"{body.color1}, "
-            f"{body.color2}, "
-            f"{body.color3}, "
+            f"{'%02X%02X%02X' % body.color}, "
             f"{body.texture}\n"
             )
             data += body_data
@@ -306,7 +304,7 @@ class Asystem:
 
                 glDisable(GL_LIGHTING)
                 glLineWidth(1)
-                glColor3f(body.color1/255, body.color2/255, body.color3/255)
+                glColor3f(body.color[0]/255, body.color[1]/255, body.color[2]/255)
                 if init.orbit == True:
                     glBegin(GL_LINE_STRIP)
                     dis_coord = body.coord
@@ -317,7 +315,7 @@ class Asystem:
                     for point in dis_coord:
                         glVertex3f(init.SCALE * point[0], init.SCALE * point[1], init.SCALE * point[2])
                     glEnd()
-                self.glut_print3(init.SCALE * body.x, init.SCALE * body.y, init.SCALE * body.z, GLUT_BITMAP_9_BY_15, body.ident, body.color1/255, body.color2/255, body.color3/255, 1.0)
+                self.glut_print3(init.SCALE * body.x, init.SCALE * body.y, init.SCALE * body.z, GLUT_BITMAP_9_BY_15, body.ident, body.color[0]/255, body.color[1]/255, body.color[2]/255, 1.0)
                 glEnable(GL_LIGHTING)
 
         glutSwapBuffers()
@@ -564,7 +562,7 @@ def planet_system(n_bodies):
 
 if __name__ == "__main__":
     write_file = open(f"{datetime.datetime.now().strftime('%Y%m%dT%H%M%SZ (validity)')}.csv", 'w')
-    write_file.write('ident,             JDTDB,                      X,                      Y,                      Z,              VX (km/s),              VY (km/s),              VZ (km/s),             mass (kg),          radius (km),  color1,   color2,    color3,\n')
+    write_file.write('ident,             JDTDB,                      X,                      Y,                      Z,              VX (km/s),              VY (km/s),              VZ (km/s),             mass (kg),          radius (km),  color,\n')
 
     glutInit(sys.argv)
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH)
