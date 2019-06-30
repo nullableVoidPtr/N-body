@@ -251,21 +251,19 @@ class Asystem:
         self.collisions = ""
         if_T = False
         for i in range(len(self.system)):
-            for j in range(len(self.system)):
-                if i > j:
-                    x_dif = self.system[i].x - self.system[j].x
-                    y_dif = self.system[i].y - self.system[j].y
-                    z_dif = self.system[i].z - self.system[j].z
-                    distance = (x_dif**2 + y_dif**2 + z_dif**2)**0.5
-                    if distance <= 30*(self.system[i].radius + self.system[j].radius):
-                        if_T = True
-                    if distance <= self.system[i].radius + self.system[j].radius:
-                        self.collisions += f"{self.system[i].ident} and {self.system[j].ident}, "
+            for j in range(i):
+				x_dif = self.system[i].x - self.system[j].x
+				y_dif = self.system[i].y - self.system[j].y
+				z_dif = self.system[i].z - self.system[j].z
+				distance = (x_dif**2 + y_dif**2 + z_dif**2)**0.5
+				if_T = distance <= 30*(self.system[i].radius + self.system[j].radius)
+				if distance <= self.system[i].radius + self.system[j].radius:
+					self.collisions += f"{self.system[i].ident} and {self.system[j].ident}, "
         if self.collisions != "":
             string = self.collisions[:-2]
-            self.glut_print(10, 25, GLUT_BITMAP_9_BY_15, "Collision: " + string, 1.0, 1.0, 1.0, 1.0)
         else:
-            self.glut_print(10, 25, GLUT_BITMAP_9_BY_15, "Collision: None", 1.0, 1.0, 1.0, 1.0)
+            string = "None"
+		self.glut_print(10, 25, GLUT_BITMAP_9_BY_15, "Collision: " + string, 1.0, 1.0, 1.0, 1.0)
         if init.bool_T == False:
             planet_system.DELTA_T = 0
         elif if_T == True:
