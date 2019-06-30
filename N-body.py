@@ -40,7 +40,7 @@ SEC_PER_DAY = float(config['CONFIGURE']['SEC_PER_DAY'])
 EXPONENT = float(config['CONFIGURE']['EXPONENT'])
 ORBIT_LENGTH = int(config['CONFIGURE']['ORBIT_LENGTH'])
 SAVE_RATE = int(config['CONFIGURE']['SAVE_RATE'])
-TEXTURE_FILE = str(config['CONFIGURE']['TEXTURE_FILE'])
+TEXTURE_PATH = str(config['CONFIGURE']['TEXTURE_PATH'])
 
 
 
@@ -49,7 +49,7 @@ Class holds attributes of a single body
 '''
 class Body(object):
     global_ident = 0
-    def __init__(self, ident=None, time=2452170.375, x=None, y=None,z=None,Vx=None,Vy=None,Vz=None,mass=None,radius=None,color1=None,color2=None,color3=None,texture=None):
+    def __init__(self, ident=None, time=2452170.375, x=None, y=None,z=None,Vx=None,Vy=None,Vz=None,mass=None,radius=None,color1=None,color2=None,color3=None,texture_file=None):
         if ident == None:
             self.ident = Body.global_ident
             Body.global_ident += 1
@@ -67,7 +67,8 @@ class Body(object):
         self.color1 = color1 or random()
         self.color2 = color2 or random()
         self.color3 = color3 or random()
-        self.texture = 0 or texture
+        self.texture = None
+        self.load_texture(texture_file)
         self.coord = []
         self.zeroF()
         self.collisions = ""
@@ -115,8 +116,27 @@ class Body(object):
         self.z += self.Vz * planet_system.DELTA_T
         self.coord.append((self.x,self.y,self.z))
 
+    def load_texture(self, filename):
+        if not filename:
+            return
+        textID = glGenTextures(1)
+        img = Image.open(TEXTURE_PATH + filename)
+        img_data = numpy.array(list(img.getdata()), numpy.int8)
+        glBindTexture(GL_TEXTURE_2D, textID)
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img.size[0], img.size[1], 0,
+             GL_RGB, GL_UNSIGNED_BYTE, img_data)
+        self.texture = textID
+
     def display(self):
-        if self.texture != 0:
+        if self.texture:
             ''''''
 
             qobj = gluNewQuadric()
@@ -124,7 +144,7 @@ class Body(object):
             gluQuadricDrawStyle(qobj, GLU_FILL)
             gluQuadricNormals(qobj, GLU_SMOOTH)
             #gluQuadricOrientation()
-            glBindTexture(GL_TEXTURE_2D, planet_system.texture_names[self.texture-1])
+            glBindTexture(GL_TEXTURE_2D, self.texture)
             glEnable(GL_TEXTURE_2D)
             gluSphere(qobj, init.BALL_SIZE * (self.radius**init.EXPONENT), 50, 50)
             gluDeleteQuadric(qobj)
@@ -166,7 +186,6 @@ class Asystem:
         else:
             raise Exception("Invalid input type for init of Asystem")
         self.count = 0
-        self.texture_names = self.create_textures()
         self.closeness = []
     def __str__(self):
         return "\n".join([str(body) for body in self.system])
@@ -176,7 +195,7 @@ class Asystem:
         for line in open(file_name):
             fields = line.split(",")
             if fields[0] != 'ident':
-                body = Body(str(fields[0]),
+                body = Body(str(fields[0]).strip(),
                             float(fields[1]),
                             float(fields[2]),
                             float(fields[3]),
@@ -189,7 +208,7 @@ class Asystem:
                             float(fields[10]),
                             float(fields[11]),
                             float(fields[12]),
-                            int(fields[13]))
+                            str(fields[13]).strip())
                 bodies.append(body)
         return bodies
 
@@ -257,31 +276,6 @@ class Asystem:
         else:
             self.DELTA_T = init.NORM_DELTA_T
 
-    def create_textures(self):
-        filename = []
-        file=open(TEXTURE_FILE,'r')
-        try:
-            filename = file.read().splitlines()
-        except:
-            print("%s not found" %TEXTURE_FILE)
-        textures = []
-        for file in filename:
-            textID = glGenTextures(1)
-            img = Image.open(file)
-            img_data = numpy.array(list(img.getdata()), numpy.int8)
-            glBindTexture(GL_TEXTURE_2D, textID)
-            glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-            glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img.size[0], img.size[1], 0,
-                 GL_RGB, GL_UNSIGNED_BYTE, img_data)
-            textures.append(textID)
-        return textures
     '''
     This function redraws the screen after the positions of particles have been updated
     '''
