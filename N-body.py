@@ -14,7 +14,7 @@ import numpy
 import json
 
 config = configparser.ConfigParser()
-config.read('configure_random.ini')
+config.read('configure.ini')
 
 
 WIDTH = int(config['CONFIGURE']['WIDTH'])
