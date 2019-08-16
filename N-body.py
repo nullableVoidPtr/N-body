@@ -45,9 +45,9 @@ TEXTURE_PATH = str(config['CONFIGURE']['TEXTURE_PATH'])
 
 
 
-'''
-Class holds attributes of a single body
-'''
+
+# Class holds attributes of a single body
+
 class Body(object):
 	global_ident = 0
 	def __init__(self, ident=None, time=2452170.375, x=None, y=None,z=None,Vx=None,Vy=None,Vz=None,mass=None,radius=None,color=None,texture_file=None):
@@ -152,30 +152,13 @@ class Body(object):
 			gluSphere(qobj, init.BALL_SIZE * (self.radius**init.EXPONENT), 50, 50)
 			gluDeleteQuadric(qobj)
 			glDisable(GL_TEXTURE_2D)
-			'''
-			glEnable(GL_TEXTURE_2D)
-			glBindTexture(GL_TEXTURE_2D, self.texture)
-			glEnable(GL_TEXTURE_GEN_S)
-			glEnable(GL_TEXTURE_GEN_T)
-			glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP)
-			glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP)
-			glutSolidSphere(BALL_SIZE * (self.radius**init.EXPONENT), 50, 50)
-			glDisable(GL_TEXTURE_2D)
-			'''
 		else:
-			'''
-			glColor3f(self.color[0]/255, self.color[1]/255, self.color[2]/255)
-			glutSolidSphere(BALL_SIZE * (body.radius**init.EXPONENT), 20, 20)
-			glPopMatrix()
-			glLineWidth(1)
-			glColor(self.color[0]/255, self.color[1]/255, self.color[2]/255)
-			'''
 			color = [self.color[0]/255, self.color[1]/255, self.color[2]/255]
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, color)
 			glutSolidSphere(BALL_SIZE * (self.radius**init.EXPONENT), 20, 20)
-'''
-Class holds bodies
-'''
+
+# Class holds bodies
+
 class Asystem:
 	def __init__(self,input):
 		self.DELTA_T = NORM_DELTA_T
@@ -272,9 +255,9 @@ class Asystem:
 		else:
 			self.DELTA_T = init.NORM_DELTA_T
 
-	'''
-	This function redraws the screen after the positions of particles have been updated
-	'''
+	
+	# This function redraws the screen after the positions of particles have been updated
+	
 	def display(self):
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -294,9 +277,6 @@ class Asystem:
 			for body in self.system:
 				glPushMatrix()
 				glTranslated(init.SCALE * body.x, init.SCALE * body.y, init.SCALE * body.z)
-				#glRotatef((-1)*init.eyeRho * math.sin(init.eyePhi) * math.sin(init.eyeTheta), 1, 0, 0)
-				#glRotatef((-1)*init.eyeRho * math.cos(init.eyePhi), 0, 1, 0)
-				#glRotatef((-1)*init.eyeRho * math.sin(init.eyePhi) * math.sin(init.eyeTheta), 0, 0, 1)
 				body.display()
 				glPopMatrix()
 
@@ -318,9 +298,9 @@ class Asystem:
 
 		glutSwapBuffers()
 
-	'''
-	Display text
-	'''
+	
+	# Display text
+	
 	def glut_print(self, x, y, font, text, r, g, b, a):
 		self.blending = False
 		if glIsEnabled(GL_BLEND):
@@ -348,10 +328,10 @@ class Asystem:
 
 		if not self.blending:
 			glDisable(GL_BLEND)
-	'''
-	Calculates when bodies reach a closest proximity
-	If the distance is smaller than the distance of the previous and next time step, its recorded
-	'''
+	
+	# Calculates when bodies reach a closest proximity
+	# If the distance is smaller than the distance of the previous and next time step, its recorded
+	
 	def close_calc(self,body1,body2):
 		distances = []
 		if len(body1.coord)>2:
@@ -387,8 +367,6 @@ class Asystem:
 		self.display()
 		self.count+=1
 
-
-
 class Definition:
 	def __init__(self):			 #InitialiglEnable(GL_CULL_FACE)zation of graphics
 		glClearColor(0.1,0.0,0.15,0.0)
@@ -409,10 +387,6 @@ class Definition:
 		glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular)
 		glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess)
 		lightZeroColor = [1.0, 1.0, 1.0, 1.0]
-		#glLightfv(GL_LIGHT0, GL_POSITION, light_sun_position)
-		#glLightfv(GL_LIGHT0, GL_DIFFUSE, lightZeroColor)
-		#glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.1)
-		#glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.05)
 		glEnable(GL_LIGHT0)
 
 		#global previousTime, eyeTheta, eyePhi, eyeRho, look, windowWidth, windowHeight, upY
@@ -531,7 +505,8 @@ class Definition:
 			self.prevMouseX = mouseX
 			self.prevMouseY = mouseY
 
-	def reshape(self, width, height):			 #Manipulate with the window
+    #Manipulate with the window
+	def reshape(self, width, height):
 		self.displayRatio = 1 * width / height
 		self.windowWidth = width
 		self.windowHeight = height
@@ -542,19 +517,38 @@ class Definition:
 
 
 
-'''
-Randomly generates planetary system
-'''
+
+# Randomly generates planetary system
+
 def planet_system(n_bodies):
-	system = Asystem(0)
-	system.system.append(Body(0,2452170.375,0,0,0,0,0,0,100000000000000000000,3,253,184,19, 0))
-	position = 5
-	velocity = 1
-	for i in range(n_bodies):
-		if i != 0:
-			mass_radius = uniform(1,2000000000000)
-			system.system.append(Body(i,2452170.375,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),mass_radius,mass_radius/1000000000000,uniform(0,255),uniform(0,255),uniform(0,255),0))
-	return system
+    system = Asystem(0)
+
+    #sun
+    mass = uniform(1000000, 3000000) * 1E24
+    density = uniform(1000, 3000) * 1E9
+    volume = mass / density
+    radius = (3 * volume / (4 * math.pi)) ** (1 / 3)
+    system.system.append(Body(0, 2452170.375, 0, 0, 0, 0, 0, 0, mass, radius, 253, 184, 19, 0))
+
+    #second sun
+    if uniform(1,100)<20:
+        mass = uniform(1000000, 3000000) * 1E24
+        density = uniform(1000, 3000) * 1E9
+        volume = mass / density
+        radius = (3 * volume / (4 * math.pi)) ** (1 / 3)
+        system.system.append(Body(0, 2452170.375, 0, 0, 0, 0, 0, 0, mass, radius, 21, 244, 238, 0))
+
+    #bodies
+    position = 5
+    velocity = 1
+    for i in range(n_bodies):
+        if i != 0:
+            mass = uniform(0.01,2000)*1E24
+            density = uniform(500,6000)*1E9
+            volume = mass/density
+            radius = (3*volume/(4*math.pi))**(1/3)
+            system.system.append(Body(i,2452170.375,uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * position,position),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),uniform(-1 * velocity,velocity),mass,radius,uniform(0,255),uniform(0,255),uniform(0,255),0))
+    return system
 
 
 
@@ -569,11 +563,10 @@ if __name__ == "__main__":
 		glutCreateWindow("N-Body")
 
 
-		glGenTextures(1)
-		#planet_system = planet_system(10)
-		planet_system = Asystem("Solar_system.json")
-
-		init = Definition()
+    glGenTextures(1)
+    planet_system = planet_system(15)
+    random = False
+    init = Definition()
 
 		if init.display:
 			glutDisplayFunc(planet_system.display)
