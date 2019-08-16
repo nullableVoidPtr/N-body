@@ -8,3 +8,4 @@ uranus.jpg
 neptune.jpg
 sun.jpg
 moon.jpg
+milky_way.jpg
